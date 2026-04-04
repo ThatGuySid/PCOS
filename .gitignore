@@ -1,0 +1,51 @@
+# Node modules
+node_modules/
+
+# Expo
+.expo/
+.expo-shared/
+web-build/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.production
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Build output
+dist/
+build/
+
+# Android / iOS
+android/
+ios/
+
+# Expo generated files
+*.expo
+*.log
+
+# Firebase (optional but smart)
+firebase-debug.log
+firestore-debug.log
+
+# Misc
+*.keystore
+*.jks
+*.p12
+*.key
+
+# TypeScript
+*.tsbuildinfo
