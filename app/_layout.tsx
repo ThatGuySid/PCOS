@@ -14,9 +14,6 @@ export default function RootLayout() {
 
       {/* Login screen — you'll add this next */}
       <Stack.Screen name="login" />
-
-      {/* Tab navigator — all main app screens live here */}
-      <Stack.Screen name="(tabs)" />
     </Stack>
   );
 }
