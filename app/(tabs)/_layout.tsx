@@ -12,10 +12,14 @@ export default function RootLayout() {
       {/* Entry point — onboarding runs before any tab is shown */}
       <Stack.Screen name="onboarding" />
 
-      {/* Login screen — you'll add this next */}
+      {/* Auth */}
       <Stack.Screen name="login" />
+      <Stack.Screen name="signup" />
 
-      {/* Tab navigator — all main app screens live here */}
+      {/* Profile setup — runs once after first login */}
+      <Stack.Screen name="profile-setup" />
+
+      {/* Main app */}
       <Stack.Screen name="(tabs)" />
     </Stack>
   );

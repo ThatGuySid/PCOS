@@ -1,9 +1,5 @@
 import { Stack } from "expo-router";
-
-export const unstable_settings = {
-  initialRouteName: "onboarding",
-};
-
+import "../global.css";
 // Root layout — onboarding lives outside the tab navigator as a stack screen.
 // Once a user completes onboarding, they get pushed to the (tabs) group.
 export default function RootLayout() {
@@ -12,8 +8,15 @@ export default function RootLayout() {
       {/* Entry point — onboarding runs before any tab is shown */}
       <Stack.Screen name="onboarding" />
 
-      {/* Login screen — you'll add this next */}
+      {/* Auth */}
       <Stack.Screen name="login" />
+      <Stack.Screen name="signup" />
+
+      {/* Profile setup — runs once after first login */}
+      <Stack.Screen name="profile-setup" />
+
+      {/* Main app */}
+      <Stack.Screen name="(tabs)" />
     </Stack>
   );
 }
