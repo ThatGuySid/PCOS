@@ -13,7 +13,6 @@ import {
 import AuthInput from "@/components/auth/AuthInput";
 //import GoogleButton from "@/components/auth/GoogleButton";
 
-// ── Pixel heart — same as onboarding, keeping it consistent ──────────────────
 function PixelHeart() {
   const grid = [
     [0, 1, 1, 0, 1, 1, 0],
@@ -44,7 +43,6 @@ function PixelHeart() {
   );
 }
 
-// ── Divider with "or" text ────────────────────────────────────────────────────
 function OrDivider() {
   return (
     <View className="flex-row items-center my-5">
@@ -55,11 +53,9 @@ function OrDivider() {
   );
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
 export default function Signup() {
   const router = useRouter();
 
-  // ── Form state ──────────────────────────────────────────────────────────────
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -67,7 +63,6 @@ export default function Signup() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  // ── Handlers ────────────────────────────────────────────────────────────────
   const handleSignup = () => {
     if (!name || !email || !password || !confirmPassword) {
       Alert.alert("Missing fields", "Please fill in all fields.");
@@ -77,12 +72,12 @@ export default function Signup() {
       Alert.alert("Password mismatch", "Passwords do not match.");
       return;
     }
-    // TODO: connect to your auth service here
+    // Hook this into real signup when backend is ready.
     router.replace("/profile-setup");
   };
 
   const handleGoogleSuccess = (idToken: string) => {
-    // TODO: send idToken to your backend / Firebase auth
+    // Send this token to your auth backend.
     console.log("Google ID token:", idToken);
     router.replace("/profile-setup");
   };
@@ -91,7 +86,6 @@ export default function Signup() {
     Alert.alert("Google Sign-In Error", error);
   };
 
-  // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <KeyboardAvoidingView
       className="flex-1 bg-[#FDF0F2]"
@@ -102,7 +96,7 @@ export default function Signup() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Logo ── */}
+        {/* Logo */}
         <View className="items-center mb-8">
           <PixelHeart />
           <Text
@@ -116,7 +110,7 @@ export default function Signup() {
           </Text>
         </View>
 
-        {/* ── Name ── */}
+        {/* Name */}
         <AuthInput
           label="Name"
           placeholder="Your full name"
@@ -126,7 +120,7 @@ export default function Signup() {
           returnKeyType="next"
         />
 
-        {/* ── Email ── */}
+        {/* Email */}
         <AuthInput
           label="Email"
           placeholder="your@email.com"
@@ -137,7 +131,7 @@ export default function Signup() {
           returnKeyType="next"
         />
 
-        {/* ── Password ── */}
+        {/* Password */}
         <AuthInput
           label="Password"
           placeholder="••••••••"
@@ -153,7 +147,7 @@ export default function Signup() {
           }
         />
 
-        {/* ── Confirm Password ── */}
+        {/* Confirm password */}
         <AuthInput
           label="Confirm Password"
           placeholder="••••••••"
@@ -170,7 +164,7 @@ export default function Signup() {
           }
         />
 
-        {/* ── Sign Up button ── */}
+        {/* Sign up button */}
         <TouchableOpacity
           onPress={handleSignup}
           activeOpacity={0.85}
@@ -181,7 +175,7 @@ export default function Signup() {
           </Text>
         </TouchableOpacity>
 
-        {/* ── Already have account ── */}
+        {/* Log in link */}
         <View className="flex-row justify-center mt-5">
           <Text className="text-[#8C5F66] text-sm">
             Already have an account?{" "}

@@ -10,8 +10,6 @@ type Props = {
   isLast?: boolean;
 };
 
-// Pixel heart SVG as unicode approximation using boxes
-// Each slide has: blush background + dot pattern + pixel heart + title + desc + button + optional skip
 export default function OnboardingSlide({
   title,
   description,

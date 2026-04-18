@@ -1,22 +1,14 @@
-import { TouchableOpacity, Text, View, ActivityIndicator } from "react-native";
 import {
   GoogleSignin,
   statusCodes,
 } from "@react-native-google-signin/google-signin";
 import { useState } from "react";
+import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
 
 type Props = {
   onSuccess: (idToken: string) => void;
   onError?: (error: string) => void;
 };
-
-// Call GoogleSignin.configure() once at app startup (e.g. in _layout.tsx):
-//
-//   GoogleSignin.configure({
-//     webClientId: "YOUR_WEB_CLIENT_ID_HERE", // ← replace with your client ID
-//   });
-//
-// This component handles the sign-in flow and returns the idToken on success.
 
 export default function GoogleButton({ onSuccess, onError }: Props) {
   const [loading, setLoading] = useState(false);
@@ -70,7 +62,6 @@ export default function GoogleButton({ onSuccess, onError }: Props) {
         <ActivityIndicator color="#C0162C" />
       ) : (
         <>
-          {/* Google "G" logo — drawn as SVG-like coloured text approximation */}
           <View
             style={{
               width: 22,

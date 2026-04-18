@@ -1,12 +1,12 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    Text,
-    TouchableOpacity,
-    View,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import AgeGroupPicker from "@/components/profile-setup/AgeGroupPicker";
@@ -46,20 +46,25 @@ export default function ProfileSetupPage() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView
-        contentContainerStyle={{ padding: 24, paddingBottom: 48 }}
+        contentContainerStyle={{
+          paddingTop: 50,
+          paddingRight: 24,
+          paddingBottom: 48,
+          paddingLeft: 30,
+        }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
         {/* ── Page title ── */}
         <Text
-          className="text-[#C0162C] text-2xl font-bold tracking-widest uppercase mb-6"
+          className="text-[#C0162C] text-2xl font-bold tracking-widest uppercase mb-8"
           style={{ letterSpacing: 2 }}
         >
           Set Up Your Profile
         </Text>
 
         {/* ── Avatar picker ── */}
-        <View className="mb-8">
+        <View className="mb-10">
           <AvatarPicker
             selected={selectedAvatar}
             onSelect={setSelectedAvatar}
@@ -67,7 +72,7 @@ export default function ProfileSetupPage() {
         </View>
 
         {/* ── Age group picker ── */}
-        <View className="mb-8">
+        <View className="mb-10">
           <AgeGroupPicker selected={selectedAge} onSelect={setSelectedAge} />
         </View>
 
@@ -81,7 +86,7 @@ export default function ProfileSetupPage() {
           />
         </View>
 
-        {/* ── Continue — plain red text link per design ── */}
+        {/* ── Continue — plain red text  ── */}
         <TouchableOpacity
           onPress={handleContinue}
           activeOpacity={0.7}

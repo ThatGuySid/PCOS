@@ -1,18 +1,23 @@
-import { View, Text, TouchableOpacity } from "react-native";
+import {
+  Image,
+  ImageSourcePropType,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 type Props = {
   selected: number | null;
   onSelect: (index: number) => void;
 };
 
-// Placeholder avatar colors — replace View boxes with Image when assets are ready
-const AVATARS = [
-  { bg: "#5B8CDB", accent: "#F472B6" }, // blue bg, pink top
-  { bg: "#FBBF24", accent: "#EC4899" }, // yellow bg, pink top
-  { bg: "#3B82F6", accent: "#F59E0B" }, // blue bg, yellow top
-  { bg: "#FBBF24", accent: "#60A5FA" }, // yellow bg, blue top
-  { bg: "#A78BFA", accent: "#F97316" }, // purple bg, orange top
-  { bg: "#FACC15", accent: "#EF4444" }, // yellow bg, red top
+const AVATARS: ImageSourcePropType[] = [
+  require("@/assets/images/ProfileAvatar1.png"),
+  require("@/assets/images/ProfileAvatar2.png"),
+  require("@/assets/images/ProfileAvatar3.png"),
+  require("@/assets/images/ProfileAvatar4.png"),
+  require("@/assets/images/ProfileAvatar5.png"),
+  require("@/assets/images/ProfileAvatar6.png"),
 ];
 
 export default function AvatarPicker({ selected, onSelect }: Props) {
@@ -25,7 +30,7 @@ export default function AvatarPicker({ selected, onSelect }: Props) {
 
       {/* 2x3 grid */}
       <View className="flex-row flex-wrap gap-3">
-        {AVATARS.map((avatar, index) => (
+        {AVATARS.map((avatarSource, index) => (
           <TouchableOpacity
             key={index}
             onPress={() => onSelect(index)}
@@ -34,38 +39,19 @@ export default function AvatarPicker({ selected, onSelect }: Props) {
               width: "30%",
               aspectRatio: 1,
               borderRadius: 12,
-              backgroundColor: avatar.bg,
               borderWidth: selected === index ? 3 : 0,
               borderColor: "#C0162C",
               overflow: "hidden",
-              alignItems: "center",
-              justifyContent: "flex-end",
             }}
           >
-            {/* Placeholder figure — torso + head */}
-            <View
+            <Image
+              source={avatarSource}
+              resizeMode="cover"
               style={{
-                width: "60%",
-                height: "55%",
-                backgroundColor: avatar.accent,
-                borderTopLeftRadius: 40,
-                borderTopRightRadius: 40,
-                alignItems: "center",
-                justifyContent: "flex-start",
-                paddingTop: 4,
+                width: "100%",
+                height: "100%",
               }}
-            >
-              {/* Head */}
-              <View
-                style={{
-                  width: 22,
-                  height: 22,
-                  borderRadius: 11,
-                  backgroundColor: "#FDDCB5",
-                  marginTop: -14,
-                }}
-              />
-            </View>
+            />
           </TouchableOpacity>
         ))}
       </View>

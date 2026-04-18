@@ -42,7 +42,7 @@ export default function OnboardingPage() {
     if (step < 2) {
       setStep((step + 1) as Step);
     } else {
-      // Navigate to login — update this route once you create the login page
+      // Navigate to login
       router.replace("./login");
     }
   };
