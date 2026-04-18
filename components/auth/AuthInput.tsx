@@ -1,12 +1,10 @@
-import { View, Text, TextInput, TextInputProps } from "react-native";
+import { Text, TextInput, TextInputProps, View } from "react-native";
 
 type Props = TextInputProps & {
   label: string;
   leftIcon?: React.ReactNode;
 };
 
-// Reusable pill-shaped input — matches the login page style
-// Accepts any TextInput prop (secureTextEntry, keyboardType, etc.)
 export default function AuthInput({ label, leftIcon, ...inputProps }: Props) {
   return (
     <View className="mb-4">

@@ -20,7 +20,6 @@ export default function LoginScreen() {
   };
 
   const handleSignup = () => {
-    // TODO: create signup.tsx page later
     router.push("/signup");
   };
 
