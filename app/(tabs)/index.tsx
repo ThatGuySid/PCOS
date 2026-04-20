@@ -12,7 +12,11 @@ export default function HomeScreen() {
     // Full blush-pink background matching the design
     <View className="flex-1 bg-[#F7C5CC]">
       <ScrollView
-        contentContainerStyle={{ padding: 24, paddingTop: 56 }}
+        contentContainerStyle={{
+          padding: 22,
+          paddingTop: 40,
+          paddingBottom: 10,
+        }}
         showsVerticalScrollIndicator={false}
       >
         {/* Logo + greeting + subtitle */}

@@ -44,9 +44,9 @@ function getGreeting() {
 
 export default function GreetingHeader({ name }: Props) {
   return (
-    <View className="mb-16 items-center">
+    <View className="mb-10 items-center">
       {/* Logo row */}
-      <View className="flex-row items-center gap-2 mb-8">
+      <View className="flex-row items-center gap-2 mb-5">
         <PixelHeart />
         <Text
           className="text-[#C0162C] text-2xl font-bold"
@@ -57,7 +57,7 @@ export default function GreetingHeader({ name }: Props) {
       </View>
 
       {/* Greeting */}
-      <Text className="text-[#C0162C] text-2xl font-bold mb-2 text-center">
+      <Text className="text-[#C0162C] text-2xl font-bold mb-1 text-center">
         {getGreeting()}, {name}! 🌸
       </Text>
 

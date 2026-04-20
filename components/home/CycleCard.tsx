@@ -15,7 +15,7 @@ export default function CycleCard({ cycleDay, totalCycleDays, phase }: Props) {
       style={{
         backgroundColor: "#E8637A",
         borderRadius: 24,
-        padding: 20,
+        padding: 16,
         shadowColor: "#C0162C",
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.2,

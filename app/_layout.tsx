@@ -2,13 +2,11 @@ import { UserProvider } from "@/context/UserContext";
 import { Stack } from "expo-router";
 import "../global.css";
 
-// Root layout — onboarding lives outside the tab navigator as a stack screen.
-// Once a user completes onboarding, they get pushed to the (tabs) group.
 export default function RootLayout() {
   return (
     <UserProvider>
       <Stack screenOptions={{ headerShown: false }}>
-        {/* Entry point — onboarding runs before any tab is shown */}
+        {/* Entry point —  */}
         <Stack.Screen name="onboarding" />
 
         {/* Auth */}
@@ -20,6 +18,12 @@ export default function RootLayout() {
 
         {/* Main app */}
         <Stack.Screen name="(tabs)" />
+
+        {/* Health sub-screens — stack over the tabs */}
+        <Stack.Screen name="period-log" />
+        <Stack.Screen name="workout" />
+        <Stack.Screen name="food-diet" />
+        <Stack.Screen name="ai-assistant" />
       </Stack>
     </UserProvider>
   );
