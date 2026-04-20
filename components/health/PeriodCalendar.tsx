@@ -1,3 +1,4 @@
+import { toDateKey } from "@/constants/cycleUtils";
 import { useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 
@@ -28,21 +29,20 @@ function getFirstDayOfMonth(year: number, month: number) {
 type Props = {
   selectedDate: Date | null;
   onSelectDate: (date: Date) => void;
-  // Days to highlight as period days (1-indexed day numbers)
-  periodDays?: number[];
-  periodStartDay?: number | null;
-  periodEndDay?: number | null;
-  ovulationDay?: number | null;
+  periodDateKeys?: string[];
+  periodStartDateKey?: string | null;
+  periodEndDateKey?: string | null;
+  ovulationDateKey?: string | null;
   compact?: boolean;
 };
 
 export default function PeriodCalendar({
   selectedDate,
   onSelectDate,
-  periodDays = [],
-  periodStartDay = null,
-  periodEndDay = null,
-  ovulationDay = null,
+  periodDateKeys = [],
+  periodStartDateKey = null,
+  periodEndDateKey = null,
+  ovulationDateKey = null,
   compact = false,
 }: Props) {
   const today = new Date();
@@ -53,10 +53,17 @@ export default function PeriodCalendar({
   const firstDay = getFirstDayOfMonth(viewYear, viewMonth);
 
   // Build calendar grid — nulls for empty leading cells
+  const leadingEmptyCells = Array(firstDay).fill(null);
+  const monthDayCells = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+  const trailingCellCount =
+    (7 - ((leadingEmptyCells.length + monthDayCells.length) % 7)) % 7;
+  const trailingEmptyCells = Array(trailingCellCount).fill(null);
   const cells: (number | null)[] = [
-    ...Array(firstDay).fill(null),
-    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+    ...leadingEmptyCells,
+    ...monthDayCells,
+    ...trailingEmptyCells,
   ];
+  const periodSet = new Set(periodDateKeys);
 
   const handlePrevMonth = () => {
     if (viewMonth === 0) {
@@ -171,10 +178,17 @@ export default function PeriodCalendar({
           {cells.slice(weekIdx * 7, weekIdx * 7 + 7).map((day, cellIdx) => {
             const selected = day !== null && isSelected(day);
             const todayCell = day !== null && isToday(day);
-            const isPeriod = day !== null && periodDays.includes(day);
-            const isPeriodStart = day !== null && periodStartDay === day;
-            const isPeriodEnd = day !== null && periodEndDay === day;
-            const isOvulation = day !== null && ovulationDay === day;
+            const cellDateKey =
+              day === null
+                ? null
+                : toDateKey(new Date(viewYear, viewMonth, day));
+            const isPeriod = cellDateKey !== null && periodSet.has(cellDateKey);
+            const isPeriodStart =
+              cellDateKey !== null && periodStartDateKey === cellDateKey;
+            const isPeriodEnd =
+              cellDateKey !== null && periodEndDateKey === cellDateKey;
+            const isOvulation =
+              cellDateKey !== null && ovulationDateKey === cellDateKey;
 
             return (
               <TouchableOpacity
