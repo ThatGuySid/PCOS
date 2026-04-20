@@ -17,7 +17,7 @@ export default function AvatarDisplay({ avatarIndex }: Props) {
   const avatarSource = AVATARS[avatarIndex ?? 0];
 
   return (
-    <View className="items-center mb-6" style={{ marginTop: -10 }}>
+    <View className="items-center mb-4" style={{ marginTop: -12 }}>
       {/* Outer circle */}
       <View
         style={{

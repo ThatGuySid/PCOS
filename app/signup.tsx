@@ -1,17 +1,16 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 import AuthInput from "@/components/auth/AuthInput";
-//import GoogleButton from "@/components/auth/GoogleButton";
 
 function PixelHeart() {
   const grid = [
@@ -43,16 +42,6 @@ function PixelHeart() {
   );
 }
 
-function OrDivider() {
-  return (
-    <View className="flex-row items-center my-5">
-      <View className="flex-1 h-px bg-[#E8A0A8]" />
-      <Text className="mx-4 text-[#B08890] text-sm">or</Text>
-      <View className="flex-1 h-px bg-[#E8A0A8]" />
-    </View>
-  );
-}
-
 export default function Signup() {
   const router = useRouter();
 
@@ -74,16 +63,6 @@ export default function Signup() {
     }
     // Hook this into real signup when backend is ready.
     router.replace("/profile-setup");
-  };
-
-  const handleGoogleSuccess = (idToken: string) => {
-    // Send this token to your auth backend.
-    console.log("Google ID token:", idToken);
-    router.replace("/profile-setup");
-  };
-
-  const handleGoogleError = (error: string) => {
-    Alert.alert("Google Sign-In Error", error);
   };
 
   return (
