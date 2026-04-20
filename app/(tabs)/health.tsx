@@ -7,7 +7,7 @@ const MENU_ITEMS = [
     icon: "📅",
     iconBg: "#E8637A",
     title: "Period Log",
-    subtitle: "Track your menstrual cycle\nand symptoms",
+    subtitle: "Mark start/end, ovulation,\nand log symptoms",
     route: "/period-log",
   },
   {

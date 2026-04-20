@@ -1,186 +1,22 @@
 import PeriodCalendar from "@/components/health/PeriodCalendar";
+import {
+  buildDateRangeKeys,
+  flattenUniqueDateKeys,
+  getLatestPeriodEntry,
+  sortPeriodEntriesByStartDate,
+  toDateKey,
+} from "@/constants/cycleUtils";
 import { useUser } from "@/context/UserContext";
 import { useEffect, useState } from "react";
-import { Text, TextInput, TouchableOpacity, View } from "react-native";
-
-type PredictionResult = {
-  symptoms: string[];
-  confidenceLabel: "High" | "Medium" | "Low";
-};
-
-const PREDICTION_MAP: Record<string, string[]> = {
-  Cramps: [
-    "cramp",
-    "cramps",
-    "abdomen pain",
-    "lower belly pain",
-    "pelvic pain",
-  ],
-  Bloating: ["bloat", "bloated", "gas", "swollen belly"],
-  Headache: ["headache", "head pain", "migraine"],
-  "Mood Swings": ["mood swing", "irritable", "irritated", "emotional", "angry"],
-  Fatigue: ["fatigue", "tired", "low energy", "exhausted", "sleepy"],
-  Acne: ["acne", "pimple", "breakout", "skin breakout"],
-  Nausea: ["nausea", "nauseous", "queasy", "vomit"],
-  Dizziness: ["dizzy", "dizziness", "lightheaded", "faint"],
-  "Lower Back Pain": ["back pain", "lower back", "backache"],
-  Anxiety: ["anxiety", "anxious", "panic"],
-  Insomnia: ["insomnia", "can not sleep", "cant sleep", "sleepless"],
-  "Food Cravings": ["craving", "cravings", "hungry", "sweet cravings"],
-  Spotting: ["spotting", "spot", "light bleeding"],
-  "Heavy Flow": ["heavy flow", "heavy bleeding", "soaking pad"],
-};
+import { Text, TouchableOpacity, View } from "react-native";
 
 const REMOVED_SYMPTOM = "Breast Tenderness";
-
-function normalizeText(value: string) {
-  return value
-    .toLowerCase()
-    .replace(/\bi\s*am\b/g, "i am")
-    .replace(/\bcan't\b/g, "cant")
-    .replace(/\bcannot\b/g, "cant")
-    .replace(/\bcan not\b/g, "cant")
-    .replace(/\blight\s*headed\b/g, "lightheaded")
-    .replace(/\bperiod\s*pain\b/g, "cramps")
-    .replace(/[^a-z0-9\s]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function levenshteinDistance(a: string, b: string) {
-  if (a === b) return 0;
-  if (!a.length) return b.length;
-  if (!b.length) return a.length;
-
-  const matrix: number[][] = Array.from({ length: a.length + 1 }, (_, i) =>
-    Array.from({ length: b.length + 1 }, (_, j) =>
-      i === 0 ? j : j === 0 ? i : 0,
-    ),
-  );
-
-  for (let i = 1; i <= a.length; i++) {
-    for (let j = 1; j <= b.length; j++) {
-      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-      matrix[i][j] = Math.min(
-        matrix[i - 1][j] + 1,
-        matrix[i][j - 1] + 1,
-        matrix[i - 1][j - 1] + cost,
-      );
-    }
-  }
-
-  return matrix[a.length][b.length];
-}
-
-function isFuzzyTokenMatch(inputToken: string, keywordToken: string) {
-  if (!inputToken || !keywordToken) return false;
-  if (inputToken === keywordToken) return true;
-
-  const maxDistance = keywordToken.length <= 5 ? 1 : 2;
-  return levenshteinDistance(inputToken, keywordToken) <= maxDistance;
-}
-
-function keywordMatchesText(
-  normalizedText: string,
-  textTokens: string[],
-  keyword: string,
-) {
-  if (!keyword) return false;
-
-  const normalizedKeyword = normalizeText(keyword);
-  if (!normalizedKeyword) return false;
-
-  if (normalizedText.includes(normalizedKeyword)) {
-    return true;
-  }
-
-  const keywordTokens = normalizedKeyword.split(" ").filter(Boolean);
-  if (keywordTokens.length === 0) return false;
-
-  return keywordTokens.every((keywordToken) =>
-    textTokens.some((token) => isFuzzyTokenMatch(token, keywordToken)),
-  );
-}
-
-function predictSymptomsFromText(input: string): PredictionResult {
-  const normalized = normalizeText(input);
-
-  if (!normalized) {
-    return { symptoms: [], confidenceLabel: "Low" };
-  }
-
-  const textTokens = normalized.split(" ").filter(Boolean);
-
-  const scoredMatches = Object.entries(PREDICTION_MAP)
-    .map(([symptom, keywords]) => {
-      let exactMatchCount = 0;
-      let fuzzyMatchCount = 0;
-
-      keywords.forEach((keyword) => {
-        const normalizedKeyword = normalizeText(keyword);
-        if (!normalizedKeyword) return;
-
-        if (normalized.includes(normalizedKeyword)) {
-          exactMatchCount += 1;
-          return;
-        }
-
-        if (keywordMatchesText(normalized, textTokens, keyword)) {
-          fuzzyMatchCount += 1;
-        }
-      });
-
-      const score = exactMatchCount * 1 + fuzzyMatchCount * 0.55;
-
-      return {
-        symptom,
-        exactMatchCount,
-        fuzzyMatchCount,
-        score,
-      };
-    })
-    .filter((item) => item.score > 0)
-    .sort((a, b) => b.score - a.score);
-
-  const predicted = scoredMatches.map((item) => item.symptom);
-
-  const totalScore = scoredMatches.reduce((sum, item) => sum + item.score, 0);
-  const strongSignals = scoredMatches.filter(
-    (item) => item.exactMatchCount > 0 || item.score >= 1.2,
-  ).length;
-
-  const confidenceScore = Math.min(
-    1,
-    strongSignals * 0.35 +
-      totalScore * 0.08 +
-      Math.min(predicted.length, 4) * 0.06,
-  );
-
-  const confidenceLabel: PredictionResult["confidenceLabel"] =
-    confidenceScore >= 0.75
-      ? "High"
-      : confidenceScore >= 0.45
-        ? "Medium"
-        : "Low";
-
-  return { symptoms: predicted, confidenceLabel };
-}
-
-function buildPeriodRange(startDay: number | null, endDay: number | null) {
-  if (startDay === null || endDay === null) return [];
-
-  const low = Math.min(startDay, endDay);
-  const high = Math.max(startDay, endDay);
-  return Array.from({ length: high - low + 1 }, (_, idx) => low + idx);
-}
 
 export default function ActionButtons() {
   const { user, setUser } = useUser();
   const [openPanel, setOpenPanel] = useState<"period" | "symptoms" | null>(
     null,
   );
-  const [symptomText, setSymptomText] = useState("");
-  const [predictionMessage, setPredictionMessage] = useState("");
   const [periodMessage, setPeriodMessage] = useState("");
   const visibleSymptoms = user.symptoms.filter((s) => s !== REMOVED_SYMPTOM);
 
@@ -207,37 +43,61 @@ export default function ActionButtons() {
   ];
 
   const selectedDay = user.selectedPeriodDate?.getDate();
-  const handleMarkPeriodStart = () => {
-    if (selectedDay === undefined) return;
+  const isAwaitingPeriodEnd =
+    !!user.periodStartDateKey && !user.periodEndDateKey;
 
-    const updatedDays = buildPeriodRange(selectedDay, user.periodEndDay);
+  // ===== Period section (home): only add a new entry and delete latest =====
+
+  const handleMarkPeriodStart = () => {
+    if (!user.selectedPeriodDate || selectedDay === undefined) return;
+
+    const startKey = toDateKey(user.selectedPeriodDate);
     setUser({
-      periodStartDay: selectedDay,
-      periodDays: updatedDays,
+      periodStartDateKey: startKey,
+      periodEndDateKey: null,
+      periodDateKeys: [],
     });
     setPeriodMessage(`Period start set to day ${selectedDay}.`);
   };
 
   const handleMarkPeriodEnd = () => {
-    if (selectedDay === undefined) return;
-    if (user.periodStartDay === null) {
+    if (!user.selectedPeriodDate || selectedDay === undefined) return;
+    if (!user.periodStartDateKey) {
       setPeriodMessage("Set period start first, then set period end.");
       return;
     }
 
-    const updatedDays = buildPeriodRange(user.periodStartDay, selectedDay);
+    const endKey = toDateKey(user.selectedPeriodDate);
+    if (endKey < user.periodStartDateKey) {
+      setPeriodMessage("End date cannot be before start date.");
+      return;
+    }
+
+    const rangeKeys = buildDateRangeKeys(user.periodStartDateKey, endKey);
+    const newEntry = {
+      startDateKey: user.periodStartDateKey,
+      endDateKey: endKey,
+      dateKeys: rangeKeys,
+    };
+    const nextEntries = sortPeriodEntriesByStartDate([
+      ...user.periodEntries,
+      newEntry,
+    ]);
+
     setUser({
-      periodEndDay: selectedDay,
-      periodDays: updatedDays,
-      periodLengthDays: updatedDays.length,
+      periodEndDateKey: endKey,
+      periodDateKeys: flattenUniqueDateKeys(nextEntries),
+      periodEntries: nextEntries,
+      periodLengthDays: rangeKeys.length,
     });
     setPeriodMessage(`Period end set to day ${selectedDay}.`);
   };
 
   const handleMarkOvulation = () => {
-    if (selectedDay === undefined) return;
-    const isSameDay = user.ovulationDay === selectedDay;
-    setUser({ ovulationDay: isSameDay ? null : selectedDay });
+    if (!user.selectedPeriodDate || selectedDay === undefined) return;
+    const selectedDateKey = toDateKey(user.selectedPeriodDate);
+    const isSameDay = user.ovulationDateKey === selectedDateKey;
+    setUser({ ovulationDateKey: isSameDay ? null : selectedDateKey });
     setPeriodMessage(
       isSameDay
         ? "Ovulation marker removed."
@@ -245,6 +105,41 @@ export default function ActionButtons() {
     );
   };
 
+  const handlePrimaryPeriodAction = () => {
+    if (isAwaitingPeriodEnd) {
+      handleMarkPeriodEnd();
+      return;
+    }
+
+    handleMarkPeriodStart();
+  };
+
+  const handleDeleteLastEntry = () => {
+    if (!user.periodEntries.length) {
+      setPeriodMessage("No period entries to delete.");
+      return;
+    }
+
+    const sortedEntries = sortPeriodEntriesByStartDate(user.periodEntries);
+    const nextEntries = sortedEntries.slice(0, -1);
+    const latestRemaining = getLatestPeriodEntry(nextEntries);
+
+    setUser({
+      periodEntries: nextEntries,
+      periodDateKeys: flattenUniqueDateKeys(nextEntries),
+      periodStartDateKey: latestRemaining?.startDateKey ?? null,
+      periodEndDateKey: latestRemaining?.endDateKey ?? null,
+      periodLengthDays: latestRemaining?.dateKeys.length ?? null,
+    });
+    setPeriodMessage("Last period entry deleted.");
+  };
+
+  const handleClearOvulation = () => {
+    setUser({ ovulationDateKey: null });
+    setPeriodMessage("Ovulation marker cleared.");
+  };
+
+  // ===== Symptoms section (home): quick chip toggles only =====
   const toggleSymptom = (symptom: string) => {
     const existingSymptoms = user.symptoms.filter((s) => s !== REMOVED_SYMPTOM);
     const updatedSymptoms = existingSymptoms.includes(symptom)
@@ -252,25 +147,6 @@ export default function ActionButtons() {
       : [...existingSymptoms, symptom];
 
     setUser({ symptoms: updatedSymptoms });
-  };
-
-  const handlePredictFromText = () => {
-    const result = predictSymptomsFromText(symptomText);
-
-    if (result.symptoms.length === 0) {
-      setPredictionMessage(
-        "Could not confidently detect symptoms yet. Please use chips for now.",
-      );
-      return;
-    }
-
-    const existingSymptoms = user.symptoms.filter((s) => s !== REMOVED_SYMPTOM);
-    const merged = [...new Set([...existingSymptoms, ...result.symptoms])];
-    setUser({ symptoms: merged });
-
-    setPredictionMessage(
-      `${result.confidenceLabel} confidence: detected ${result.symptoms.join(", ")}.`,
-    );
   };
 
   return (
@@ -323,6 +199,7 @@ export default function ActionButtons() {
         </TouchableOpacity>
       </View>
 
+      {/* ===== Render: Period Panel ===== */}
       {openPanel === "period" && (
         <View style={{ marginTop: 10 }}>
           <View
@@ -343,10 +220,10 @@ export default function ActionButtons() {
           <PeriodCalendar
             selectedDate={user.selectedPeriodDate}
             onSelectDate={(date) => setUser({ selectedPeriodDate: date })}
-            periodDays={user.periodDays}
-            periodStartDay={user.periodStartDay}
-            periodEndDay={user.periodEndDay}
-            ovulationDay={user.ovulationDay}
+            periodDateKeys={user.periodDateKeys}
+            periodStartDateKey={user.periodStartDateKey}
+            periodEndDateKey={user.periodEndDateKey}
+            ovulationDateKey={user.ovulationDateKey}
             compact
           />
 
@@ -359,10 +236,10 @@ export default function ActionButtons() {
             }}
           >
             <TouchableOpacity
-              onPress={handleMarkPeriodStart}
+              onPress={handlePrimaryPeriodAction}
               activeOpacity={0.85}
               style={{
-                flex: 1,
+                flex: 2,
                 backgroundColor: "#fff",
                 borderRadius: 50,
                 paddingVertical: 9,
@@ -375,28 +252,7 @@ export default function ActionButtons() {
               <Text
                 style={{ color: "#C0162C", fontSize: 11, fontWeight: "700" }}
               >
-                Mark Start
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={handleMarkPeriodEnd}
-              activeOpacity={0.85}
-              style={{
-                flex: 1,
-                backgroundColor: "#fff",
-                borderRadius: 50,
-                paddingVertical: 9,
-                paddingHorizontal: 6,
-                borderWidth: 1,
-                borderColor: "#F2D0D5",
-                alignItems: "center",
-              }}
-            >
-              <Text
-                style={{ color: "#C0162C", fontSize: 11, fontWeight: "700" }}
-              >
-                Mark End
+                {isAwaitingPeriodEnd ? "Mark End" : "Mark Start"}
               </Text>
             </TouchableOpacity>
 
@@ -422,6 +278,48 @@ export default function ActionButtons() {
             </TouchableOpacity>
           </View>
 
+          <View
+            style={{
+              marginTop: 6,
+              flexDirection: "row",
+              gap: 8,
+            }}
+          >
+            <TouchableOpacity
+              onPress={handleDeleteLastEntry}
+              activeOpacity={0.8}
+              style={{
+                borderRadius: 50,
+                paddingVertical: 6,
+                paddingHorizontal: 10,
+                backgroundColor: "rgba(255,255,255,0.35)",
+                borderWidth: 1,
+                borderColor: "rgba(255,255,255,0.45)",
+              }}
+            >
+              <Text style={{ color: "#fff", fontSize: 11, fontWeight: "700" }}>
+                Delete Last Entry
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={handleClearOvulation}
+              activeOpacity={0.8}
+              style={{
+                borderRadius: 50,
+                paddingVertical: 6,
+                paddingHorizontal: 10,
+                backgroundColor: "rgba(255,255,255,0.35)",
+                borderWidth: 1,
+                borderColor: "rgba(255,255,255,0.45)",
+              }}
+            >
+              <Text style={{ color: "#fff", fontSize: 11, fontWeight: "700" }}>
+                Clear Ovulation
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           {!!periodMessage && (
             <Text
               style={{
@@ -436,6 +334,7 @@ export default function ActionButtons() {
         </View>
       )}
 
+      {/* ===== Render: Symptoms Panel ===== */}
       {openPanel === "symptoms" && (
         <View style={{ marginTop: 10 }}>
           <View
@@ -475,60 +374,6 @@ export default function ActionButtons() {
             >
               Log Symptoms
             </Text>
-
-            <View
-              style={{
-                flexDirection: "row",
-                gap: 8,
-                marginBottom: 12,
-              }}
-            >
-              <TextInput
-                value={symptomText}
-                onChangeText={setSymptomText}
-                placeholder="e.g. I feel dizzy and bloated"
-                placeholderTextColor="#B08890"
-                style={{
-                  flex: 1,
-                  borderWidth: 1,
-                  borderColor: "#F2D0D5",
-                  borderRadius: 12,
-                  paddingHorizontal: 12,
-                  paddingVertical: 10,
-                  color: "#3A1A20",
-                  fontSize: 13,
-                  backgroundColor: "#FDF0F2",
-                }}
-              />
-              <TouchableOpacity
-                onPress={handlePredictFromText}
-                activeOpacity={0.85}
-                style={{
-                  backgroundColor: "#C0162C",
-                  borderRadius: 12,
-                  paddingHorizontal: 12,
-                  justifyContent: "center",
-                }}
-              >
-                <Text
-                  style={{ color: "#fff", fontSize: 12, fontWeight: "700" }}
-                >
-                  Predict
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {!!predictionMessage && (
-              <Text
-                style={{
-                  color: "#8C5F66",
-                  fontSize: 12,
-                  marginBottom: 10,
-                }}
-              >
-                {predictionMessage}
-              </Text>
-            )}
 
             <View
               style={{
@@ -573,6 +418,17 @@ export default function ActionButtons() {
                 color: "#8C5F66",
                 fontSize: 12,
                 marginTop: 10,
+              }}
+            >
+              Use Period Log in Health tab for detailed text-based symptom
+              prediction.
+            </Text>
+
+            <Text
+              style={{
+                color: "#8C5F66",
+                fontSize: 12,
+                marginTop: 4,
               }}
             >
               {visibleSymptoms.length > 0

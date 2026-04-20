@@ -1,7 +1,14 @@
+import { toDateKey } from "@/constants/cycleUtils";
 import { createContext, ReactNode, useContext, useState } from "react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type CyclePhase = "Menstrual" | "Follicular" | "Ovulation" | "Luteal";
+
+export type PeriodEntry = {
+  startDateKey: string;
+  endDateKey: string;
+  dateKeys: string[];
+};
 
 type UserData = {
   name: string;
@@ -15,11 +22,12 @@ type UserData = {
   periodLengthDays: number | null;
   cycleRegularity: "Regular" | "Irregular" | null;
   flowIntensity: "Light" | "Medium" | "Heavy" | null;
-  periodStartDay: number | null;
-  periodEndDay: number | null;
-  ovulationDay: number | null;
+  periodStartDateKey: string | null;
+  periodEndDateKey: string | null;
+  ovulationDateKey: string | null;
   selectedPeriodDate: Date | null;
-  periodDays: number[];
+  periodDateKeys: string[];
+  periodEntries: PeriodEntry[];
   symptoms: string[];
 };
 
@@ -41,11 +49,38 @@ const DEFAULT_USER: UserData = {
   periodLengthDays: 5,
   cycleRegularity: null,
   flowIntensity: null,
-  periodStartDay: 3,
-  periodEndDay: 7,
-  ovulationDay: null,
+  periodStartDateKey: toDateKey(
+    new Date(new Date().getFullYear(), new Date().getMonth(), 3),
+  ),
+  periodEndDateKey: toDateKey(
+    new Date(new Date().getFullYear(), new Date().getMonth(), 7),
+  ),
+  ovulationDateKey: null,
   selectedPeriodDate: new Date(),
-  periodDays: [3, 4, 5, 6, 7],
+  periodDateKeys: [
+    toDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 3)),
+    toDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 4)),
+    toDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 5)),
+    toDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 6)),
+    toDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 7)),
+  ],
+  periodEntries: [
+    {
+      startDateKey: toDateKey(
+        new Date(new Date().getFullYear(), new Date().getMonth(), 3),
+      ),
+      endDateKey: toDateKey(
+        new Date(new Date().getFullYear(), new Date().getMonth(), 7),
+      ),
+      dateKeys: [
+        toDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 3)),
+        toDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 4)),
+        toDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 5)),
+        toDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 6)),
+        toDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 7)),
+      ],
+    },
+  ],
   symptoms: [],
 };
 
