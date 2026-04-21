@@ -1,17 +1,17 @@
 import PeriodCalendar from "@/components/health/PeriodCalendar";
 import {
+  predictSymptomsFromText,
+  SYMPTOM_OPTIONS,
+} from "@/constants/symptomPrediction";
+import { CyclePhase, useUser } from "@/context/UserContext";
+import {
   buildDateRangeKeys,
   flattenUniqueDateKeys,
   fromDateKey,
   getLatestPeriodEntry,
   sortPeriodEntriesByStartDate,
   toDateKey,
-} from "@/constants/cycleUtils";
-import {
-  predictSymptomsFromText,
-  SYMPTOM_OPTIONS,
-} from "@/constants/symptomPrediction";
-import { CyclePhase, useUser } from "@/context/UserContext";
+} from "@/services/dateService";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
