@@ -1,10 +1,10 @@
 import PeriodCalendar from "@/components/health/PeriodCalendar";
 import {
-  buildDateRangeKeys,
-  flattenUniqueDateKeys,
-  getLatestPeriodEntry,
-  sortPeriodEntriesByStartDate,
-  toDateKey,
+    buildDateRangeKeys,
+    flattenUniqueDateKeys,
+    getLatestPeriodEntry,
+    sortPeriodEntriesByStartDate,
+    toDateKey,
 } from "@/constants/cycleUtils";
 import { useUser } from "@/context/UserContext";
 import { useEffect, useState } from "react";
@@ -18,6 +18,7 @@ export default function ActionButtons() {
     null,
   );
   const [periodMessage, setPeriodMessage] = useState("");
+  const [symptomMessage, setSymptomMessage] = useState("");
   const visibleSymptoms = user.symptoms.filter((s) => s !== REMOVED_SYMPTOM);
 
   useEffect(() => {
@@ -147,6 +148,46 @@ export default function ActionButtons() {
       : [...existingSymptoms, symptom];
 
     setUser({ symptoms: updatedSymptoms });
+    if (symptomMessage) setSymptomMessage("");
+  };
+
+  const handleSaveSymptomLog = () => {
+    if (!visibleSymptoms.length) {
+      setSymptomMessage("Select at least one symptom to save a log.");
+      return;
+    }
+
+    const targetDate = user.selectedPeriodDate ?? new Date();
+    const dateKey = toDateKey(targetDate);
+    const uniqueSymptoms = [...new Set(visibleSymptoms)];
+
+    const existingLog = user.symptomLogs.find((log) => log.dateKey === dateKey);
+    const mergedSymptoms = existingLog
+      ? [...new Set([...existingLog.symptoms, ...uniqueSymptoms])]
+      : uniqueSymptoms;
+
+    const nextLog = {
+      id: existingLog?.id ?? `${dateKey}-${Date.now()}`,
+      dateKey,
+      symptoms: mergedSymptoms,
+      cycleDay: user.cycleDay,
+      cyclePhase: user.cyclePhase,
+    };
+
+    const nextLogs = existingLog
+      ? user.symptomLogs.map((log) => (log.dateKey === dateKey ? nextLog : log))
+      : [...user.symptomLogs, nextLog];
+
+    const sortedLogs = [...nextLogs].sort((a, b) =>
+      b.dateKey.localeCompare(a.dateKey),
+    );
+
+    setUser({
+      symptomLogs: sortedLogs,
+      symptoms: [],
+    });
+
+    setSymptomMessage(`Saved log for ${dateKey}.`);
   };
 
   return (
@@ -437,6 +478,34 @@ export default function ActionButtons() {
                   } selected`
                 : "Select symptoms to log"}
             </Text>
+
+            <TouchableOpacity
+              onPress={handleSaveSymptomLog}
+              activeOpacity={0.85}
+              style={{
+                marginTop: 10,
+                backgroundColor: "#C0162C",
+                borderRadius: 12,
+                paddingVertical: 10,
+                alignItems: "center",
+              }}
+            >
+              <Text style={{ color: "#fff", fontSize: 13, fontWeight: "700" }}>
+                Save Log
+              </Text>
+            </TouchableOpacity>
+
+            {!!symptomMessage && (
+              <Text
+                style={{
+                  color: "#8C5F66",
+                  fontSize: 12,
+                  marginTop: 8,
+                }}
+              >
+                {symptomMessage}
+              </Text>
+            )}
           </View>
         </View>
       )}
