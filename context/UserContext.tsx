@@ -1,11 +1,17 @@
-import { toDateKey } from "@/constants/cycleUtils";
+import {
+  computeCyclePhase,
+  computeLiveCycleDay,
+} from "@/services/cycleService";
+import { toDateKey } from "@/services/dateService";
+import { getRecentSymptoms } from "@/services/symptomService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
-    createContext,
-    ReactNode,
-    useContext,
-    useEffect,
-    useState,
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
 } from "react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -50,6 +56,9 @@ type UserData = {
 type UserContextType = {
   user: UserData;
   setUser: (data: Partial<UserData>) => void;
+  livePhase: CyclePhase;
+  liveCycleDay: number;
+  recentSymptoms: string[];
 };
 
 // ── Defaults ──────────────────────────────────────────────────────────────────
@@ -201,8 +210,30 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setUserState((prev) => ({ ...prev, ...data }));
   };
 
+  const liveCycleDay = useMemo(
+    () => computeLiveCycleDay(user.periodStartDateKey, user.totalCycleDays),
+    [user.periodStartDateKey, user.totalCycleDays],
+  );
+
+  const livePhase = useMemo(
+    () =>
+      computeCyclePhase(
+        liveCycleDay,
+        user.totalCycleDays,
+        user.periodLengthDays ?? 5,
+      ),
+    [liveCycleDay, user.totalCycleDays, user.periodLengthDays],
+  );
+
+  const recentSymptoms = useMemo(
+    () => getRecentSymptoms(user.symptomLogs),
+    [user.symptomLogs],
+  );
+
   return (
-    <UserContext.Provider value={{ user, setUser }}>
+    <UserContext.Provider
+      value={{ user, setUser, livePhase, liveCycleDay, recentSymptoms }}
+    >
       {children}
     </UserContext.Provider>
   );
