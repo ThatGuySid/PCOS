@@ -1,15 +1,16 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
+import AuthInput from "@/components/auth/AuthInput";
 import AgeGroupPicker from "@/components/profile-setup/AgeGroupPicker";
 import AvatarPicker from "@/components/profile-setup/AvatarPicker";
 import BMIInputs from "@/components/profile-setup/BMIInputs";
@@ -22,10 +23,13 @@ export default function ProfileSetupPage() {
   const { setUser } = useUser();
 
   // ── State ──────────────────────────────────────────────
+  const [name, setName] = useState("");
   const [selectedAvatar, setSelectedAvatar] = useState<number | null>(null);
   const [selectedAge, setSelectedAge] = useState<string | null>(null);
+  const [ageInput, setAgeInput] = useState("");
   const [bmi, setBmi] = useState({ height: "", weight: "" });
   const [activeBMIField, setActiveBMIField] = useState<ActiveBMIField>(null);
+  const [cycleLength, setCycleLength] = useState("28");
   const [periodLength, setPeriodLength] = useState("5");
   const [regularity, setRegularity] = useState<"Regular" | "Irregular" | null>(
     null,
@@ -47,13 +51,24 @@ export default function ProfileSetupPage() {
   const handleContinue = () => {
     const parsedHeight = Number.parseInt(bmi.height, 10);
     const parsedWeight = Number.parseInt(bmi.weight, 10);
+    const parsedCycleLength = Number.parseInt(cycleLength, 10);
     const parsedPeriodLength = Number.parseInt(periodLength, 10);
+    const parsedAge = Number.parseInt(ageInput, 10);
+    const safeCycleLength = Number.isNaN(parsedCycleLength)
+      ? 28
+      : Math.min(45, Math.max(14, parsedCycleLength));
+    const safeAge = Number.isNaN(parsedAge)
+      ? null
+      : Math.min(99, Math.max(10, parsedAge));
+    const resolvedAgeGroup = safeAge !== null ? `${safeAge}` : selectedAge;
 
     setUser({
+      name: name.trim() || "User",
       avatarIndex: selectedAvatar,
-      ageGroup: selectedAge,
+      ageGroup: resolvedAgeGroup,
       bmiHeightCm: Number.isNaN(parsedHeight) ? null : parsedHeight,
       bmiWeightKg: Number.isNaN(parsedWeight) ? null : parsedWeight,
+      totalCycleDays: safeCycleLength,
       periodLengthDays: Number.isNaN(parsedPeriodLength)
         ? null
         : parsedPeriodLength,
@@ -88,6 +103,19 @@ export default function ProfileSetupPage() {
           Set Up Your Profile
         </Text>
 
+        {/* ── Name ── */}
+        <Text className="text-[#C0162C] text-sm font-semibold mb-2">
+          Your Name
+        </Text>
+        <AuthInput
+          label=""
+          placeholder="What should we call you?"
+          value={name}
+          onChangeText={setName}
+          autoCapitalize="words"
+          returnKeyType="done"
+        />
+
         {/* ── Avatar picker ── */}
         <View className="mb-7">
           <AvatarPicker
@@ -99,6 +127,29 @@ export default function ProfileSetupPage() {
         {/* ── Age group picker ── */}
         <View className="mb-7">
           <AgeGroupPicker selected={selectedAge} onSelect={setSelectedAge} />
+
+          <Text className="text-[#8C5F66] text-xs mt-3 mb-2">
+            or enter your age
+          </Text>
+          <View
+            style={{
+              borderWidth: 1.5,
+              borderColor: "#E8A0A8",
+              borderRadius: 14,
+              backgroundColor: "#fff",
+              paddingHorizontal: 14,
+              paddingVertical: 10,
+            }}
+          >
+            <TextInput
+              value={ageInput}
+              onChangeText={setAgeInput}
+              keyboardType="numeric"
+              placeholder="e.g. 24"
+              placeholderTextColor="#B08890"
+              style={{ color: "#3A1A20", fontSize: 14 }}
+            />
+          </View>
         </View>
 
         {/* ── BMI inputs ── */}
@@ -109,6 +160,32 @@ export default function ProfileSetupPage() {
             onFieldPress={handleBMIFieldPress}
             onChange={handleBMIChange}
           />
+        </View>
+
+        {/* ── Cycle length ── */}
+        <View className="mb-7">
+          <Text className="text-[#C0162C] text-base font-semibold mb-3">
+            In how many days does your next cycle usually start?
+          </Text>
+          <View
+            style={{
+              borderWidth: 1.5,
+              borderColor: "#E8A0A8",
+              borderRadius: 14,
+              backgroundColor: "#fff",
+              paddingHorizontal: 14,
+              paddingVertical: 10,
+            }}
+          >
+            <TextInput
+              value={cycleLength}
+              onChangeText={setCycleLength}
+              keyboardType="numeric"
+              placeholder="e.g. 28"
+              placeholderTextColor="#B08890"
+              style={{ color: "#3A1A20", fontSize: 14 }}
+            />
+          </View>
         </View>
 
         {/* ── Period duration ── */}

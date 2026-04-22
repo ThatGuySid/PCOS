@@ -3,7 +3,6 @@ import { useState } from "react";
 import { View } from "react-native";
 
 import OnboardingSlide from "@/components/onboarding/OnboardingSlide";
-import SplashScreen from "@/components/onboarding/SplashScreen";
 
 // Slide content data
 const SLIDES = [
@@ -27,18 +26,14 @@ const SLIDES = [
   },
 ];
 
-type Step = "splash" | 0 | 1 | 2;
+type Step = 0 | 1 | 2;
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const [step, setStep] = useState<Step>("splash");
-
-  // Move to first slide after splash finishes
-  const handleSplashFinish = () => setStep(0);
+  const [step, setStep] = useState<Step>(0);
 
   // Advance to next slide, or go to login on last
   const handleContinue = () => {
-    if (step === "splash") return;
     if (step < 2) {
       setStep((step + 1) as Step);
     } else {
@@ -54,18 +49,14 @@ export default function OnboardingPage() {
 
   return (
     <View style={{ flex: 1 }}>
-      {step === "splash" ? (
-        <SplashScreen onFinish={handleSplashFinish} />
-      ) : (
-        <OnboardingSlide
-          title={SLIDES[step].title}
-          description={SLIDES[step].description}
-          buttonLabel={SLIDES[step].buttonLabel}
-          onContinue={handleContinue}
-          onSkip={handleSkip}
-          isLast={step === 2}
-        />
-      )}
+      <OnboardingSlide
+        title={SLIDES[step].title}
+        description={SLIDES[step].description}
+        buttonLabel={SLIDES[step].buttonLabel}
+        onContinue={handleContinue}
+        onSkip={handleSkip}
+        isLast={step === 2}
+      />
     </View>
   );
 }

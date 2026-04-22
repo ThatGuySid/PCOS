@@ -47,7 +47,7 @@ export function flattenUniqueDateKeys(entries: Array<{ dateKeys: string[] }>) {
 }
 
 export function sortPeriodEntriesByStartDate<
-  T extends { startDateKey: string; endDateKey: string; dateKeys: string[] },
+  T extends { startDateKey: string },
 >(entries: T[]) {
   return [...entries].sort((a, b) => {
     const aStart = fromDateKey(a.startDateKey);
@@ -62,12 +62,6 @@ export function getLatestPeriodEntry<
   T extends { startDateKey: string; endDateKey: string },
 >(entries: T[]) {
   if (!entries.length) return null;
-  const sorted = sortPeriodEntriesByStartDate(
-    entries as Array<{
-      startDateKey: string;
-      endDateKey: string;
-      dateKeys: string[];
-    }>,
-  );
+  const sorted = sortPeriodEntriesByStartDate(entries);
   return sorted[sorted.length - 1] ?? null;
 }

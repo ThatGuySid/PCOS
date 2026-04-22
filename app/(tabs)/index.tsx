@@ -1,21 +1,21 @@
-import { useUser } from "@/context/UserContext";
-import { ScrollView, View } from "react-native";
-
 import AvatarDisplay from "@/components/home/AvatarDisplay";
 import CycleCard from "@/components/home/CycleCard";
 import GreetingHeader from "@/components/home/GreetingHeader";
+import NextPeriodCard from "@/components/home/NextPeriodCard";
+import { useUser } from "@/context/UserContext";
+import { ScrollView, View } from "react-native";
 
 export default function HomeScreen() {
-  const { user } = useUser();
+  const { user, livePhase, liveCycleDay, predictedNextPeriodDateKey } =
+    useUser();
 
   return (
-    // Full blush-pink background matching the design
-    <View className="flex-1 bg-[#F7C5CC]">
+    <View style={{ flex: 1, backgroundColor: "#F7C5CC" }}>
       <ScrollView
         contentContainerStyle={{
-          padding: 22,
-          paddingTop: 40,
-          paddingBottom: 10,
+          padding: 24,
+          paddingTop: 56,
+          paddingBottom: 32,
         }}
         showsVerticalScrollIndicator={false}
       >
@@ -27,9 +27,17 @@ export default function HomeScreen() {
 
         {/* Tracker / phase / action card */}
         <CycleCard
-          cycleDay={user.cycleDay}
+          cycleDay={liveCycleDay}
           totalCycleDays={user.totalCycleDays}
-          phase={user.cyclePhase}
+          phase={livePhase}
+        />
+
+        {/* Next period prediction + cycle progress */}
+        <NextPeriodCard
+          predictedNextPeriodDateKey={predictedNextPeriodDateKey}
+          livePhase={livePhase}
+          liveCycleDay={liveCycleDay}
+          totalCycleDays={user.totalCycleDays}
         />
       </ScrollView>
     </View>
