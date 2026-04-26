@@ -1,23 +1,33 @@
 import { Tabs } from "expo-router";
-import { Text } from "react-native";
+import { Text, View } from "react-native";
 
-// ── Icon components — inline SVG-style using emoji + styled views ─────────────
-// Replace these with a proper icon library (e.g. lucide-react-native) if needed
-
-function HomeIcon({ focused }: { focused: boolean }) {
-  return <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.45 }}>🏠</Text>;
-}
-
-function HeartIcon({ focused }: { focused: boolean }) {
-  return <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.45 }}>🤍</Text>;
-}
-
-function ProfileIcon({ focused }: { focused: boolean }) {
-  return <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.45 }}>👤</Text>;
-}
-
-function SettingsIcon({ focused }: { focused: boolean }) {
-  return <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.45 }}>⚙️</Text>;
+function TabIcon({
+  emoji,
+  focused,
+  label,
+}: {
+  emoji: string;
+  focused: boolean;
+  label: string;
+}) {
+  return (
+    <View style={{ alignItems: "center", gap: 2 }}>
+      <View
+        style={{
+          width: 40,
+          height: 30,
+          borderRadius: 12,
+          backgroundColor: focused ? "#FEE8EB" : "transparent",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Text style={{ fontSize: 18, opacity: focused ? 1 : 0.4 }}>
+          {emoji}
+        </Text>
+      </View>
+    </View>
+  );
 }
 
 export default function TabsLayout() {
@@ -25,56 +35,62 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        // Tab bar styling to match the herFlow design
         tabBarStyle: {
-          backgroundColor: "#FDF0F2",
-          borderTopColor: "#F2D0D5",
+          backgroundColor: "#fff",
+          borderTopColor: "#F5E0E3",
           borderTopWidth: 1,
-          height: 64,
-          paddingBottom: 10,
+          height: 72,
+          paddingBottom: 12,
           paddingTop: 8,
+          shadowColor: "#C0162C",
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.06,
+          shadowRadius: 16,
+          elevation: 12,
         },
         tabBarActiveTintColor: "#C0162C",
-        tabBarInactiveTintColor: "#B08890",
+        tabBarInactiveTintColor: "#C0A0A8",
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: "600",
+          fontSize: 10,
+          fontWeight: "700",
+          letterSpacing: 0.5,
         },
       }}
     >
-      {/* Home */}
       <Tabs.Screen
         name="index"
         options={{
           title: "Home",
-          tabBarIcon: ({ focused }) => <HomeIcon focused={focused} />,
+          tabBarIcon: ({ focused }) => (
+            <TabIcon emoji="🏠" focused={focused} label="Home" />
+          ),
         }}
       />
-
-      {/* Health / Wellness — add app/(tabs)/health.tsx for this tab */}
       <Tabs.Screen
         name="health"
         options={{
           title: "Health",
-          tabBarIcon: ({ focused }) => <HeartIcon focused={focused} />,
+          tabBarIcon: ({ focused }) => (
+            <TabIcon emoji="🌸" focused={focused} label="Health" />
+          ),
         }}
       />
-
-      {/* Profile — add app/(tabs)/profile.tsx for this tab */}
       <Tabs.Screen
         name="profile"
         options={{
           title: "Profile",
-          tabBarIcon: ({ focused }) => <ProfileIcon focused={focused} />,
+          tabBarIcon: ({ focused }) => (
+            <TabIcon emoji="👤" focused={focused} label="Profile" />
+          ),
         }}
       />
-
-      {/* Settings — add app/(tabs)/settings.tsx for this tab */}
       <Tabs.Screen
         name="settings"
         options={{
           title: "Settings",
-          tabBarIcon: ({ focused }) => <SettingsIcon focused={focused} />,
+          tabBarIcon: ({ focused }) => (
+            <TabIcon emoji="⚙️" focused={focused} label="Settings" />
+          ),
         }}
       />
     </Tabs>

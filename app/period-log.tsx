@@ -1,25 +1,25 @@
 import PeriodCalendar from "@/components/health/PeriodCalendar";
 import {
-  predictSymptomsFromText,
-  SYMPTOM_OPTIONS,
+    predictSymptomsFromText,
+    SYMPTOM_OPTIONS,
 } from "@/constants/symptomPrediction";
 import { CyclePhase, useUser } from "@/context/UserContext";
 import {
-  buildDateRangeKeys,
-  flattenUniqueDateKeys,
-  fromDateKey,
-  getLatestPeriodEntry,
-  sortPeriodEntriesByStartDate,
-  toDateKey,
+    buildDateRangeKeys,
+    flattenUniqueDateKeys,
+    fromDateKey,
+    getLatestPeriodEntry,
+    sortPeriodEntriesByStartDate,
+    toDateKey,
 } from "@/services/dateService";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ScrollView,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 const REMOVED_SYMPTOM = "Breast Tenderness";
@@ -280,13 +280,17 @@ export default function PeriodLogScreen() {
   const handleMarkPeriodEnd = () => {
     if (!user.selectedPeriodDate || selectedDay === undefined) return;
     if (!user.periodStartDateKey) {
-      setPeriodMessage("Set period start first, then set period end.");
+      setPeriodMessage(
+        "Start your period first, then we can add the end date.",
+      );
       return;
     }
 
     const endKey = toDateKey(user.selectedPeriodDate);
     if (endKey < user.periodStartDateKey) {
-      setPeriodMessage("End date cannot be before start date.");
+      setPeriodMessage(
+        "That end date is before the start date. Try a later day.",
+      );
       return;
     }
 
@@ -326,7 +330,9 @@ export default function PeriodLogScreen() {
 
   const handleDeleteLastEntry = () => {
     if (!user.periodEntries.length) {
-      setPeriodMessage("No period entries to delete.");
+      setPeriodMessage(
+        "Nothing to delete yet. Add your first period entry anytime.",
+      );
       return;
     }
 
@@ -369,7 +375,7 @@ export default function PeriodLogScreen() {
 
     if (result.symptoms.length === 0) {
       setPredictionMessage(
-        "Could not confidently detect symptoms yet. Please use chips for now.",
+        "I couldn't read clear symptoms from that text yet. Try selecting from the symptom chips.",
       );
       return;
     }
@@ -384,12 +390,12 @@ export default function PeriodLogScreen() {
 
   const handleSaveSymptomLog = () => {
     if (!selectedDateKey) {
-      setSaveMessage("Pick a date on the calendar before saving.");
+      setSaveMessage("Pick a date on the calendar first, then save your log.");
       return;
     }
 
     if (!visibleSymptoms.length) {
-      setSaveMessage("Select at least one symptom to save a log.");
+      setSaveMessage("Choose at least one symptom so we can save your log.");
       return;
     }
 
@@ -861,7 +867,8 @@ export default function PeriodLogScreen() {
 
           {sortedSymptomLogs.length === 0 ? (
             <Text style={{ color: "#8C5F66", fontSize: 12 }}>
-              No logs yet. Save your first symptom log to build history.
+              No entries yet. When you're ready, add your first symptom note
+              here.
             </Text>
           ) : (
             sortedSymptomLogs.slice(0, 10).map((log) => (

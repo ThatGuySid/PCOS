@@ -1,182 +1,278 @@
+import DangerZone from "@/components/settings/DangerZone";
 import { useUser } from "@/context/UserContext";
 import { useRouter } from "expo-router";
-import { Linking, ScrollView, Text, View } from "react-native";
-import DangerZone from "../../components/settings/DangerZone";
-import SettingToggleRow from "../../components/settings/SettingToggleRow";
+import { useState } from "react";
+import {
+  Alert,
+  Platform,
+  ScrollView,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+
+function Orb({
+  size,
+  color,
+  style,
+}: {
+  size: number;
+  color: string;
+  style?: object;
+}) {
+  return (
+    <View
+      style={[
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: color,
+          position: "absolute",
+          opacity: 0.12,
+        },
+        style,
+      ]}
+    />
+  );
+}
+
+function SettingRow({
+  icon,
+  label,
+  sub,
+  hasToggle,
+  onPress,
+}: {
+  icon: string;
+  label: string;
+  sub?: string;
+  hasToggle?: boolean;
+  onPress?: () => void;
+}) {
+  const [enabled, setEnabled] = useState(false);
+  return (
+    <TouchableOpacity
+      onPress={!hasToggle ? onPress : undefined}
+      activeOpacity={0.75}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        paddingVertical: 16,
+        borderBottomWidth: 1,
+        borderColor: "#F5E0E3",
+        gap: 14,
+      }}
+    >
+      <View
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: 14,
+          backgroundColor: "#FEE8EB",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Text style={{ fontSize: 18 }}>{icon}</Text>
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={{ color: "#3A0A12", fontSize: 14, fontWeight: "700" }}>
+          {label}
+        </Text>
+        {sub && (
+          <Text style={{ color: "#9A6070", fontSize: 12, marginTop: 2 }}>
+            {sub}
+          </Text>
+        )}
+      </View>
+      {hasToggle ? (
+        <Switch
+          value={enabled}
+          onValueChange={setEnabled}
+          trackColor={{ false: "#F5E0E3", true: "#C0162C" }}
+          thumbColor="#fff"
+        />
+      ) : (
+        <Text style={{ color: "#C0162C", fontSize: 18 }}>›</Text>
+      )}
+    </TouchableOpacity>
+  );
+}
+
+const SECTIONS = [
+  {
+    title: "Notifications",
+    items: [
+      {
+        icon: "🔔",
+        label: "Period Reminders",
+        sub: "Get notified before your period",
+        hasToggle: true,
+      },
+      {
+        icon: "💊",
+        label: "Medicine Alerts",
+        sub: "Daily medication reminders",
+        hasToggle: true,
+      },
+      {
+        icon: "🥚",
+        label: "Ovulation Alerts",
+        sub: "Track your fertile window",
+        hasToggle: true,
+      },
+    ],
+  },
+  {
+    title: "Account",
+    items: [
+      { icon: "👤", label: "Edit Profile" },
+      { icon: "🔒", label: "Privacy & Security" },
+      { icon: "📤", label: "Export Health Data" },
+    ],
+  },
+  {
+    title: "App",
+    items: [
+      { icon: "🌐", label: "Language", sub: "English" },
+      { icon: "ℹ️", label: "About HerFlow", sub: "v1.0.0" },
+    ],
+  },
+];
 
 export default function SettingsScreen() {
-  const { user, setUser, resetUser } = useUser();
   const router = useRouter();
+  const { resetUser } = useUser();
 
-  const handleResetAllData = async () => {
-    await resetUser();
-    // Send back to onboarding after reset
+  // Full reset — clears AsyncStorage and returns to onboarding
+  const handleResetAllData = () => {
+    resetUser();
     router.replace("/onboarding");
   };
 
+  const handleSignOut = () => {
+    if (Platform.OS === "web") {
+      if (confirm("Sign Out?\n\nYou'll be taken to the login screen.")) {
+        router.replace("/login");
+      }
+    } else {
+      Alert.alert("Sign Out", "Are you sure you want to sign out?", [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Sign Out",
+          style: "destructive",
+          onPress: () => router.replace("/login"),
+        },
+      ]);
+    }
+  };
+
   return (
-    <View style={{ flex: 1, backgroundColor: "#F7C5CC" }}>
+    <View style={{ flex: 1, backgroundColor: "#FEF4F5" }}>
+      <Orb size={200} color="#E8556A" style={{ top: -60, right: -50 }} />
+
       <ScrollView
-        contentContainerStyle={{
-          padding: 24,
-          paddingTop: 56,
-          paddingBottom: 48,
-        }}
+        contentContainerStyle={{ paddingBottom: 48 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Title ── */}
-        <Text
-          style={{
-            color: "#C0162C",
-            fontSize: 24,
-            fontWeight: "800",
-            marginBottom: 24,
-          }}
-        >
-          Settings
-        </Text>
-
-        {/* ── Notifications ── */}
+        {/* Header */}
         <View
-          style={{
-            backgroundColor: "#fff",
-            borderRadius: 18,
-            paddingHorizontal: 18,
-            marginBottom: 16,
-            shadowColor: "#C0162C",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.06,
-            shadowRadius: 8,
-            elevation: 2,
-          }}
+          style={{ paddingTop: 60, paddingHorizontal: 24, paddingBottom: 28 }}
         >
           <Text
             style={{
               color: "#C0162C",
-              fontSize: 14,
-              fontWeight: "800",
-              paddingTop: 16,
-              paddingBottom: 4,
+              fontSize: 11,
+              fontWeight: "700",
+              letterSpacing: 3,
+              textTransform: "uppercase",
+              opacity: 0.6,
+              marginBottom: 6,
             }}
           >
-            Notifications
+            herFlow
           </Text>
-
-          <SettingToggleRow
-            type="toggle"
-            emoji="🔔"
-            label="Period Reminders"
-            description="Get notified 2 days before your predicted period"
-            value={user.notificationsEnabled}
-            onToggle={(v: boolean) => setUser({ notificationsEnabled: v })}
-          />
-
-          <SettingToggleRow
-            type="toggle"
-            emoji="💊"
-            label="Daily Log Reminder"
-            description="Remind me to log symptoms each day"
-            value={false}
-            onToggle={() => {}}
-          />
+          <Text style={{ color: "#3A0A12", fontSize: 28, fontWeight: "900" }}>
+            Settings
+          </Text>
         </View>
 
-        {/* ── App ── */}
-        <View
-          style={{
-            backgroundColor: "#fff",
-            borderRadius: 18,
-            paddingHorizontal: 18,
-            marginBottom: 16,
-            shadowColor: "#C0162C",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.06,
-            shadowRadius: 8,
-            elevation: 2,
-          }}
-        >
-          <Text
-            style={{
-              color: "#C0162C",
-              fontSize: 14,
-              fontWeight: "800",
-              paddingTop: 16,
-              paddingBottom: 4,
-            }}
-          >
-            App
-          </Text>
-
-          <SettingToggleRow
-            type="button"
-            emoji="🔒"
-            label="Privacy Policy"
-            onPress={() => Linking.openURL("https://herflow.app/privacy")}
-          />
-
-          <SettingToggleRow
-            type="button"
-            emoji="📋"
-            label="Terms of Service"
-            onPress={() => Linking.openURL("https://herflow.app/terms")}
-          />
-
-          <SettingToggleRow
-            type="button"
-            emoji="💌"
-            label="Send Feedback"
-            onPress={() => Linking.openURL("mailto:hello@herflow.app")}
-          />
-        </View>
-
-        {/* ── About ── */}
-        <View
-          style={{
-            backgroundColor: "#fff",
-            borderRadius: 18,
-            padding: 18,
-            marginBottom: 24,
-            shadowColor: "#C0162C",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.06,
-            shadowRadius: 8,
-            elevation: 2,
-          }}
-        >
-          <Text
-            style={{
-              color: "#C0162C",
-              fontSize: 14,
-              fontWeight: "800",
-              marginBottom: 10,
-            }}
-          >
-            About
-          </Text>
+        {/* Setting sections */}
+        {SECTIONS.map((section) => (
           <View
-            style={{ flexDirection: "row", justifyContent: "space-between" }}
-          >
-            <Text style={{ color: "#8C5F66", fontSize: 13 }}>App Version</Text>
-            <Text style={{ color: "#3A1A20", fontSize: 13, fontWeight: "600" }}>
-              1.0.0
-            </Text>
-          </View>
-          <View
+            key={section.title}
             style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              marginTop: 8,
+              marginHorizontal: 20,
+              marginBottom: 16,
+              backgroundColor: "#fff",
+              borderRadius: 24,
+              paddingHorizontal: 20,
+              shadowColor: "#C0162C",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.07,
+              shadowRadius: 16,
+              elevation: 4,
             }}
           >
-            <Text style={{ color: "#8C5F66", fontSize: 13 }}>Built for</Text>
-            <Text style={{ color: "#3A1A20", fontSize: 13, fontWeight: "600" }}>
-              PCOS / PCOD
+            <Text
+              style={{
+                color: "#9A6070",
+                fontSize: 11,
+                fontWeight: "700",
+                letterSpacing: 1.5,
+                textTransform: "uppercase",
+                paddingTop: 18,
+                paddingBottom: 4,
+              }}
+            >
+              {section.title}
             </Text>
+            {section.items.map((item) => (
+              <SettingRow
+                key={item.label}
+                {...item}
+                onPress={
+                  item.label === "Edit Profile"
+                    ? () => router.push("/(tabs)/profile")
+                    : undefined
+                }
+              />
+            ))}
+            <View style={{ height: 4 }} />
           </View>
+        ))}
+
+        {/* Sign out */}
+        <View style={{ marginHorizontal: 20, marginBottom: 16 }}>
+          <TouchableOpacity
+            onPress={handleSignOut}
+            style={{
+              borderWidth: 1.5,
+              borderColor: "#C0162C",
+              borderRadius: 18,
+              paddingVertical: 16,
+              alignItems: "center",
+            }}
+          >
+            <Text
+              style={{
+                color: "#C0162C",
+                fontSize: 14,
+                fontWeight: "800",
+                letterSpacing: 0.5,
+              }}
+            >
+              Sign Out
+            </Text>
+          </TouchableOpacity>
         </View>
 
-        {/* ── Danger zone ── */}
-        <DangerZone onResetAllData={handleResetAllData} />
+        {/* Danger Zone — always at the bottom, clearly separated */}
+        <View style={{ marginHorizontal: 20, marginBottom: 20 }}>
+          <DangerZone onResetAllData={handleResetAllData} />
+        </View>
       </ScrollView>
     </View>
   );

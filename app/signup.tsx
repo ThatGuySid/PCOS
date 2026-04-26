@@ -1,56 +1,112 @@
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
     Alert,
+    Animated,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
     Text,
+    TextInput,
     TouchableOpacity,
     View,
 } from "react-native";
 
-import AuthInput from "@/components/auth/AuthInput";
-
-function PixelHeart() {
-  const grid = [
-    [0, 1, 1, 0, 1, 1, 0],
-    [1, 1, 1, 1, 1, 1, 1],
-    [1, 1, 1, 1, 1, 1, 1],
-    [0, 1, 1, 1, 1, 1, 0],
-    [0, 0, 1, 1, 1, 0, 0],
-    [0, 0, 0, 1, 0, 0, 0],
-  ];
-
+function Orb({
+  size,
+  color,
+  style,
+}: {
+  size: number;
+  color: string;
+  style?: object;
+}) {
   return (
-    <View style={{ alignItems: "center", marginBottom: 8 }}>
-      {grid.map((row, ri) => (
-        <View key={ri} style={{ flexDirection: "row" }}>
-          {row.map((cell, ci) => (
-            <View
-              key={ci}
-              style={{
-                width: 9,
-                height: 9,
-                backgroundColor: cell ? "#C0162C" : "transparent",
-              }}
-            />
-          ))}
-        </View>
-      ))}
+    <View
+      style={[
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: color,
+          position: "absolute",
+          opacity: 0.14,
+        },
+        style,
+      ]}
+    />
+  );
+}
+
+function FloatingInput({
+  label,
+  value,
+  onChangeText,
+  placeholder,
+  secureTextEntry,
+  keyboardType,
+  autoCapitalize,
+  rightIcon,
+}: any) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <View style={{ marginBottom: 16 }}>
+      <Text
+        style={{
+          color: focused ? "#C0162C" : "#9A6070",
+          fontSize: 11,
+          fontWeight: "700",
+          letterSpacing: 1.5,
+          textTransform: "uppercase",
+          marginBottom: 8,
+        }}
+      >
+        {label}
+      </Text>
+      <View
+        style={{
+          borderRadius: 16,
+          borderWidth: 1.5,
+          borderColor: focused ? "#C0162C" : "#EAB4BD",
+          backgroundColor: focused ? "#FFF5F6" : "#fff",
+          paddingHorizontal: 18,
+          paddingVertical: 14,
+          flexDirection: "row",
+          alignItems: "center",
+          shadowColor: focused ? "#C0162C" : "transparent",
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.12,
+          shadowRadius: 10,
+          elevation: focused ? 4 : 0,
+        }}
+      >
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor="#D9A0AC"
+          secureTextEntry={secureTextEntry}
+          keyboardType={keyboardType}
+          autoCapitalize={autoCapitalize ?? "none"}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          style={{ flex: 1, color: "#3A0A12", fontSize: 15, fontWeight: "500" }}
+        />
+        {rightIcon}
+      </View>
     </View>
   );
 }
 
 export default function Signup() {
   const router = useRouter();
-
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const btnScale = useRef(new Animated.Value(1)).current;
 
   const handleSignup = () => {
     if (!name || !email || !password || !confirmPassword) {
@@ -61,106 +117,166 @@ export default function Signup() {
       Alert.alert("Password mismatch", "Passwords do not match.");
       return;
     }
-    // Hook this into real signup when backend is ready.
-    router.replace("/profile-setup");
+    Animated.sequence([
+      Animated.timing(btnScale, {
+        toValue: 0.96,
+        duration: 80,
+        useNativeDriver: true,
+      }),
+      Animated.timing(btnScale, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start(() => router.replace("/profile-setup"));
   };
 
   return (
     <KeyboardAvoidingView
-      className="flex-1 bg-[#FDF0F2]"
+      style={{ flex: 1, backgroundColor: "#FEF4F5" }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
+      <Orb size={260} color="#E8556A" style={{ top: -100, right: -80 }} />
+      <Orb size={180} color="#C0162C" style={{ bottom: 120, left: -60 }} />
+
       <ScrollView
-        contentContainerStyle={{ paddingHorizontal: 28, paddingVertical: 48 }}
+        contentContainerStyle={{
+          paddingHorizontal: 28,
+          paddingTop: 64,
+          paddingBottom: 48,
+        }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Logo */}
-        <View className="items-center mb-8">
-          <PixelHeart />
+        {/* Header */}
+        <View style={{ marginBottom: 36 }}>
           <Text
-            className="text-[#C0162C] text-3xl font-bold"
-            style={{ fontFamily: "serif" }}
+            style={{
+              color: "#C0162C",
+              fontSize: 11,
+              fontWeight: "700",
+              letterSpacing: 3,
+              textTransform: "uppercase",
+              opacity: 0.6,
+              marginBottom: 8,
+            }}
           >
-            herFlow
+            Join HerFlow
           </Text>
-          <Text className="text-[#8C5F66] text-sm mt-1">
-            Your personal cycle companion
+          <Text
+            style={{
+              color: "#3A0A12",
+              fontSize: 32,
+              fontWeight: "900",
+              lineHeight: 38,
+              letterSpacing: -0.5,
+            }}
+          >
+            Start your{"\n"}
+            <Text style={{ color: "#C0162C" }}>wellness journey.</Text>
           </Text>
         </View>
 
-        {/* Name */}
-        <AuthInput
-          label="Name"
-          placeholder="Your full name"
-          value={name}
-          onChangeText={setName}
-          autoCapitalize="words"
-          returnKeyType="next"
-        />
-
-        {/* Email */}
-        <AuthInput
-          label="Email"
-          placeholder="your@email.com"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          returnKeyType="next"
-        />
-
-        {/* Password */}
-        <AuthInput
-          label="Password"
-          placeholder="••••••••"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry={!showPassword}
-          autoCapitalize="none"
-          returnKeyType="next"
-          leftIcon={
-            <TouchableOpacity onPress={() => setShowPassword((v) => !v)}>
-              <Text style={{ fontSize: 16 }}>{showPassword ? "🙈" : "🔒"}</Text>
-            </TouchableOpacity>
-          }
-        />
-
-        {/* Confirm password */}
-        <AuthInput
-          label="Confirm Password"
-          placeholder="••••••••"
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          secureTextEntry={!showConfirm}
-          autoCapitalize="none"
-          returnKeyType="done"
-          onSubmitEditing={handleSignup}
-          leftIcon={
-            <TouchableOpacity onPress={() => setShowConfirm((v) => !v)}>
-              <Text style={{ fontSize: 16 }}>{showConfirm ? "🙈" : "🔒"}</Text>
-            </TouchableOpacity>
-          }
-        />
-
-        {/* Sign up button */}
-        <TouchableOpacity
-          onPress={handleSignup}
-          activeOpacity={0.85}
-          className="bg-[#C0162C] rounded-full py-4 items-center mt-2"
+        {/* Form card */}
+        <View
+          style={{
+            backgroundColor: "#fff",
+            borderRadius: 28,
+            padding: 24,
+            shadowColor: "#C0162C",
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.08,
+            shadowRadius: 24,
+            elevation: 6,
+            marginBottom: 24,
+          }}
         >
-          <Text className="text-white font-bold text-base tracking-wide">
-            Sign Up
-          </Text>
-        </TouchableOpacity>
+          <FloatingInput
+            label="Full Name"
+            value={name}
+            onChangeText={setName}
+            placeholder="Your name"
+            autoCapitalize="words"
+          />
+          <FloatingInput
+            label="Email"
+            value={email}
+            onChangeText={setEmail}
+            placeholder="your@email.com"
+            keyboardType="email-address"
+          />
+          <FloatingInput
+            label="Password"
+            value={password}
+            onChangeText={setPassword}
+            placeholder="••••••••"
+            secureTextEntry={!showPass}
+            rightIcon={
+              <TouchableOpacity onPress={() => setShowPass((v) => !v)}>
+                <Text style={{ fontSize: 16 }}>{showPass ? "🙈" : "👁️"}</Text>
+              </TouchableOpacity>
+            }
+          />
+          <FloatingInput
+            label="Confirm Password"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            placeholder="••••••••"
+            secureTextEntry={!showConfirm}
+            rightIcon={
+              <TouchableOpacity onPress={() => setShowConfirm((v) => !v)}>
+                <Text style={{ fontSize: 16 }}>
+                  {showConfirm ? "🙈" : "👁️"}
+                </Text>
+              </TouchableOpacity>
+            }
+          />
 
-        {/* Log in link */}
-        <View className="flex-row justify-center mt-5">
-          <Text className="text-[#8C5F66] text-sm">
+          <Animated.View
+            style={{ transform: [{ scale: btnScale }], marginTop: 8 }}
+          >
+            <TouchableOpacity
+              onPress={handleSignup}
+              activeOpacity={0.9}
+              style={{
+                backgroundColor: "#C0162C",
+                borderRadius: 18,
+                paddingVertical: 18,
+                alignItems: "center",
+                shadowColor: "#C0162C",
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.35,
+                shadowRadius: 16,
+                elevation: 10,
+                flexDirection: "row",
+                justifyContent: "center",
+                gap: 8,
+              }}
+            >
+              <Text
+                style={{
+                  color: "#fff",
+                  fontSize: 15,
+                  fontWeight: "800",
+                  letterSpacing: 1.2,
+                  textTransform: "uppercase",
+                }}
+              >
+                Create Account
+              </Text>
+              <Text style={{ color: "#fff", fontSize: 16 }}>→</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+
+        <View style={{ flexDirection: "row", justifyContent: "center" }}>
+          <Text style={{ color: "#9A6070", fontSize: 14 }}>
             Already have an account?{" "}
           </Text>
           <TouchableOpacity onPress={() => router.replace("/login")}>
-            <Text className="text-[#C0162C] text-sm font-bold">Log In</Text>
+            <Text style={{ color: "#C0162C", fontSize: 14, fontWeight: "700" }}>
+              Sign In
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

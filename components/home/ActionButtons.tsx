@@ -1,10 +1,10 @@
 import PeriodCalendar from "@/components/health/PeriodCalendar";
 import {
-    buildDateRangeKeys,
-    flattenUniqueDateKeys,
-    getLatestPeriodEntry,
-    sortPeriodEntriesByStartDate,
-    toDateKey,
+  buildDateRangeKeys,
+  flattenUniqueDateKeys,
+  getLatestPeriodEntry,
+  sortPeriodEntriesByStartDate,
+  toDateKey,
 } from "@/constants/cycleUtils";
 import { useUser } from "@/context/UserContext";
 import { useEffect, useState } from "react";
@@ -64,13 +64,17 @@ export default function ActionButtons() {
   const handleMarkPeriodEnd = () => {
     if (!user.selectedPeriodDate || selectedDay === undefined) return;
     if (!user.periodStartDateKey) {
-      setPeriodMessage("Set period start first, then set period end.");
+      setPeriodMessage(
+        "Start your period first, then we can add the end date.",
+      );
       return;
     }
 
     const endKey = toDateKey(user.selectedPeriodDate);
     if (endKey < user.periodStartDateKey) {
-      setPeriodMessage("End date cannot be before start date.");
+      setPeriodMessage(
+        "That end date is before the start date. Try a later day.",
+      );
       return;
     }
 
@@ -117,7 +121,9 @@ export default function ActionButtons() {
 
   const handleDeleteLastEntry = () => {
     if (!user.periodEntries.length) {
-      setPeriodMessage("No period entries to delete.");
+      setPeriodMessage(
+        "Nothing to delete yet. Add your first period entry anytime.",
+      );
       return;
     }
 
@@ -153,7 +159,7 @@ export default function ActionButtons() {
 
   const handleSaveSymptomLog = () => {
     if (!visibleSymptoms.length) {
-      setSymptomMessage("Select at least one symptom to save a log.");
+      setSymptomMessage("Choose at least one symptom so we can save your log.");
       return;
     }
 
@@ -191,8 +197,16 @@ export default function ActionButtons() {
   };
 
   return (
-    <View>
-      <View className="flex-row gap-3">
+    <View
+      style={{
+        backgroundColor: "#FFF4F0",
+        borderRadius: 28,
+        padding: 14,
+        borderWidth: 1,
+        borderColor: "#F5D0D5",
+      }}
+    >
+      <View style={{ flexDirection: "row", gap: 12 }}>
         {/* Log Period */}
         <TouchableOpacity
           onPress={() =>
@@ -211,7 +225,7 @@ export default function ActionButtons() {
           }}
         >
           <Text style={{ fontSize: 15 }}>🩸</Text>
-          <Text style={{ color: "#fff", fontWeight: "700", fontSize: 14 }}>
+          <Text style={{ color: "#C0162C", fontWeight: "700", fontSize: 14 }}>
             Log Period
           </Text>
         </TouchableOpacity>
@@ -234,7 +248,7 @@ export default function ActionButtons() {
           }}
         >
           <Text style={{ fontSize: 15 }}>📋</Text>
-          <Text style={{ color: "#fff", fontWeight: "700", fontSize: 14 }}>
+          <Text style={{ color: "#C0162C", fontWeight: "700", fontSize: 14 }}>
             Symptoms
           </Text>
         </TouchableOpacity>
@@ -338,7 +352,9 @@ export default function ActionButtons() {
                 borderColor: "rgba(255,255,255,0.45)",
               }}
             >
-              <Text style={{ color: "#fff", fontSize: 11, fontWeight: "700" }}>
+              <Text
+                style={{ color: "#C0162C", fontSize: 11, fontWeight: "700" }}
+              >
                 Delete Last Entry
               </Text>
             </TouchableOpacity>
@@ -355,7 +371,9 @@ export default function ActionButtons() {
                 borderColor: "rgba(255,255,255,0.45)",
               }}
             >
-              <Text style={{ color: "#fff", fontSize: 11, fontWeight: "700" }}>
+              <Text
+                style={{ color: "#C0162C", fontSize: 11, fontWeight: "700" }}
+              >
                 Clear Ovulation
               </Text>
             </TouchableOpacity>

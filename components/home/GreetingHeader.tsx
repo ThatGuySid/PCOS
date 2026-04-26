@@ -1,10 +1,21 @@
-import { Text, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { Animated, AppState, Text, View } from "react-native";
 
 type Props = {
   name: string;
 };
 
-// ── Pixel heart — consistent with onboarding/login ───────────────────────────
+// ── Rotating subtitles ────────────────────────────────────────────────────────
+const SUBTITLES = [
+  "Ready to take care of your health today?",
+  "Your body deserves love and attention. 💕",
+  "Small steps every day make a big difference.",
+  "You're doing amazing — keep tracking! 🌸",
+  "Understanding your cycle is understanding yourself.",
+  "Every phase is beautiful. You've got this. ✨",
+  "Take a breath. You're right where you need to be.",
+];
+
 function PixelHeart() {
   const grid = [
     [0, 1, 1, 0, 1, 1, 0],
@@ -34,37 +45,93 @@ function PixelHeart() {
   );
 }
 
-// Greeting of the day based on hour
-function getGreeting() {
-  const hour = new Date().getHours();
+function getGreeting(now: Date) {
+  const hour = now.getHours();
   if (hour < 12) return "Good Morning";
   if (hour < 17) return "Good Afternoon";
   return "Good Evening";
 }
 
 export default function GreetingHeader({ name }: Props) {
+  const [now, setNow] = useState(() => new Date());
+  const [subtitleIndex, setSubtitleIndex] = useState(0);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+
+  // Update greeting time every minute and on app resume
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 60 * 1000);
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") setNow(new Date());
+    });
+    return () => {
+      clearInterval(interval);
+      subscription.remove();
+    };
+  }, []);
+
+  // Cycle through subtitles every 5 seconds with a fade transition
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Fade out
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 400,
+        useNativeDriver: true,
+      }).start(() => {
+        setSubtitleIndex((i) => (i + 1) % SUBTITLES.length);
+        // Fade in
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }).start();
+      });
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [fadeAnim]);
+
   return (
-    <View className="mb-10 items-center">
+    <View style={{ alignItems: "center" }}>
       {/* Logo row */}
-      <View className="flex-row items-center gap-2 mb-5">
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 8,
+          marginBottom: 16,
+        }}
+      >
         <PixelHeart />
-        <Text
-          className="text-[#C0162C] text-2xl font-bold"
-          style={{ fontFamily: "serif" }}
-        >
+        <Text style={{ color: "#C0162C", fontSize: 24, fontWeight: "700" }}>
           herFlow
         </Text>
       </View>
 
       {/* Greeting */}
-      <Text className="text-[#C0162C] text-2xl font-bold mb-1 text-center">
-        {getGreeting()}, {name}! 🌸
+      <Text
+        style={{
+          color: "#C0162C",
+          fontSize: 24,
+          fontWeight: "900",
+          marginBottom: 6,
+          textAlign: "center",
+        }}
+      >
+        {getGreeting(now)}, {name}! 🌸
       </Text>
 
-      {/* Subtitle */}
-      <Text className="text-[#3A1A20] text-sm text-center">
-        Ready to take care of your health today?
-      </Text>
+      {/* Cycling subtitle */}
+      <Animated.Text
+        style={{
+          opacity: fadeAnim,
+          color: "#9A6070",
+          fontSize: 14,
+          textAlign: "center",
+          lineHeight: 20,
+        }}
+      >
+        {SUBTITLES[subtitleIndex]}
+      </Animated.Text>
     </View>
   );
 }

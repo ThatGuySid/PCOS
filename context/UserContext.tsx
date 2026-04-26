@@ -80,38 +80,12 @@ export const DEFAULT_USER: UserData = {
   periodLengthDays: 5,
   cycleRegularity: null,
   flowIntensity: null,
-  periodStartDateKey: toDateKey(
-    new Date(new Date().getFullYear(), new Date().getMonth(), 3),
-  ),
-  periodEndDateKey: toDateKey(
-    new Date(new Date().getFullYear(), new Date().getMonth(), 7),
-  ),
+  periodStartDateKey: null,
+  periodEndDateKey: null,
   ovulationDateKey: null,
   selectedPeriodDate: new Date(),
-  periodDateKeys: [
-    toDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 3)),
-    toDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 4)),
-    toDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 5)),
-    toDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 6)),
-    toDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 7)),
-  ],
-  periodEntries: [
-    {
-      startDateKey: toDateKey(
-        new Date(new Date().getFullYear(), new Date().getMonth(), 3),
-      ),
-      endDateKey: toDateKey(
-        new Date(new Date().getFullYear(), new Date().getMonth(), 7),
-      ),
-      dateKeys: [
-        toDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 3)),
-        toDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 4)),
-        toDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 5)),
-        toDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 6)),
-        toDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 7)),
-      ],
-    },
-  ],
+  periodDateKeys: [],
+  periodEntries: [],
   symptoms: [],
   symptomLogs: [],
   notificationsEnabled: false,

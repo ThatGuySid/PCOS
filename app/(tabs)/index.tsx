@@ -1,44 +1,280 @@
-import AvatarDisplay from "@/components/home/AvatarDisplay";
-import CycleCard from "@/components/home/CycleCard";
+import ActionButtons from "@/components/home/ActionButtons";
 import GreetingHeader from "@/components/home/GreetingHeader";
 import NextPeriodCard from "@/components/home/NextPeriodCard";
 import { useUser } from "@/context/UserContext";
-import { ScrollView, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
+
+const PHASE_COLORS: Record<string, { bg: string; accent: string }> = {
+  Menstrual: { bg: "#C0162C", accent: "#E8637A" },
+  Follicular: { bg: "#9B6B00", accent: "#F59E0B" },
+  Ovulation: { bg: "#0F6B3E", accent: "#22C55E" },
+  Luteal: { bg: "#5B1B8E", accent: "#A855F7" },
+};
+
+function Orb({
+  size,
+  color,
+  style,
+}: {
+  size: number;
+  color: string;
+  style?: object;
+}) {
+  return (
+    <View
+      style={[
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: color,
+          position: "absolute",
+          opacity: 0.12,
+        },
+        style,
+      ]}
+    />
+  );
+}
 
 export default function HomeScreen() {
   const { user, livePhase, liveCycleDay, predictedNextPeriodDateKey } =
     useUser();
+  const phase = PHASE_COLORS[livePhase] ?? PHASE_COLORS.Menstrual;
+  const pct = Math.round((liveCycleDay / (user.totalCycleDays ?? 28)) * 100);
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#F7C5CC" }}>
+    <View style={{ flex: 1, backgroundColor: "#FEF4F5" }}>
+      <Orb size={280} color="#E8556A" style={{ top: -100, right: -80 }} />
+      <Orb size={160} color="#F4A0B0" style={{ top: 220, left: -60 }} />
+
       <ScrollView
-        contentContainerStyle={{
-          padding: 24,
-          paddingTop: 56,
-          paddingBottom: 32,
-        }}
+        contentContainerStyle={{ paddingBottom: 32 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Logo + greeting + subtitle */}
-        <GreetingHeader name={user.name} />
+        {/* ── Greeting ── */}
+        <View
+          style={{ paddingHorizontal: 24, paddingTop: 56, paddingBottom: 24 }}
+        >
+          <GreetingHeader name={user.name || "Beautiful"} />
+        </View>
 
-        {/* Circular avatar */}
-        <AvatarDisplay avatarIndex={user.avatarIndex} />
+        {/* ── Cycle card ── no negative margin so greeting is never cut off */}
+        <View
+          style={{
+            marginHorizontal: 20,
+            borderRadius: 28,
+            backgroundColor: "#fff",
+            padding: 22,
+            shadowColor: "#C0162C",
+            shadowOffset: { width: 0, height: 12 },
+            shadowOpacity: 0.15,
+            shadowRadius: 28,
+            elevation: 10,
+          }}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 20,
+            }}
+          >
+            <View>
+              <Text
+                style={{
+                  color: "#9A6070",
+                  fontSize: 11,
+                  fontWeight: "700",
+                  letterSpacing: 1.5,
+                  textTransform: "uppercase",
+                }}
+              >
+                Current Phase
+              </Text>
+              <Text
+                style={{
+                  color: "#3A0A12",
+                  fontSize: 24,
+                  fontWeight: "900",
+                  marginTop: 4,
+                }}
+              >
+                {livePhase}
+              </Text>
+            </View>
 
-        {/* Tracker / phase / action card */}
-        <CycleCard
-          cycleDay={liveCycleDay}
-          totalCycleDays={user.totalCycleDays}
-          phase={livePhase}
-        />
+            {/* Phase badge */}
+            <View
+              style={{
+                backgroundColor: phase.bg,
+                paddingHorizontal: 14,
+                paddingVertical: 8,
+                borderRadius: 14,
+              }}
+            >
+              <Text style={{ color: "#fff", fontSize: 12, fontWeight: "700" }}>
+                Day {liveCycleDay}
+              </Text>
+            </View>
+          </View>
 
-        {/* Next period prediction + cycle progress */}
-        <NextPeriodCard
-          predictedNextPeriodDateKey={predictedNextPeriodDateKey}
-          livePhase={livePhase}
-          liveCycleDay={liveCycleDay}
-          totalCycleDays={user.totalCycleDays}
-        />
+          {/* Progress bar */}
+          <View>
+            <View
+              style={{
+                height: 8,
+                backgroundColor: "#F5E0E3",
+                borderRadius: 4,
+                overflow: "hidden",
+              }}
+            >
+              <View
+                style={{
+                  height: "100%",
+                  width: `${pct}%`,
+                  backgroundColor: "#C0162C",
+                  borderRadius: 4,
+                }}
+              />
+            </View>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                marginTop: 6,
+              }}
+            >
+              <Text style={{ color: "#B06070", fontSize: 11 }}>Day 1</Text>
+              <Text
+                style={{ color: "#C0162C", fontSize: 11, fontWeight: "700" }}
+              >
+                {pct}% through cycle
+              </Text>
+              <Text style={{ color: "#B06070", fontSize: 11 }}>
+                Day {user.totalCycleDays ?? 28}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* ── Quick stats row ── */}
+        <View
+          style={{
+            flexDirection: "row",
+            gap: 12,
+            marginHorizontal: 20,
+            marginTop: 16,
+          }}
+        >
+          {[
+            {
+              label: "Cycle Length",
+              value: `${user.totalCycleDays ?? 28} days`,
+              emoji: "🔄",
+            },
+            {
+              label: "Next Period",
+              value: predictedNextPeriodDateKey
+                ? (() => {
+                    const { fromDateKey } = require("@/services/dateService");
+                    const d = fromDateKey(predictedNextPeriodDateKey);
+                    if (!d) return "—";
+                    const months = [
+                      "Jan",
+                      "Feb",
+                      "Mar",
+                      "Apr",
+                      "May",
+                      "Jun",
+                      "Jul",
+                      "Aug",
+                      "Sep",
+                      "Oct",
+                      "Nov",
+                      "Dec",
+                    ];
+                    const days = Math.round(
+                      (d.getTime() - new Date().setHours(0, 0, 0, 0)) /
+                        86400000,
+                    );
+                    return days > 0
+                      ? `In ${days}d`
+                      : days === 0
+                        ? "Today"
+                        : `${Math.abs(days)}d ago`;
+                  })()
+                : "—",
+              emoji: "📅",
+            },
+          ].map((stat) => (
+            <View
+              key={stat.label}
+              style={{
+                flex: 1,
+                backgroundColor: "#fff",
+                borderRadius: 20,
+                padding: 16,
+                shadowColor: "#C0162C",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.07,
+                shadowRadius: 12,
+                elevation: 4,
+              }}
+            >
+              <Text style={{ fontSize: 22, marginBottom: 6 }}>
+                {stat.emoji}
+              </Text>
+              <Text
+                style={{
+                  color: "#9A6070",
+                  fontSize: 10,
+                  fontWeight: "700",
+                  letterSpacing: 1,
+                  textTransform: "uppercase",
+                }}
+              >
+                {stat.label}
+              </Text>
+              <Text
+                style={{
+                  color: "#3A0A12",
+                  fontSize: 15,
+                  fontWeight: "800",
+                  marginTop: 2,
+                }}
+              >
+                {stat.value}
+              </Text>
+            </View>
+          ))}
+        </View>
+
+        {/* ── Next period prediction card ── */}
+        <View style={{ marginHorizontal: 20 }}>
+          <NextPeriodCard
+            predictedNextPeriodDateKey={predictedNextPeriodDateKey}
+            livePhase={livePhase}
+            liveCycleDay={liveCycleDay}
+            totalCycleDays={user.totalCycleDays}
+          />
+        </View>
+
+        {/* ── Quick actions ── */}
+        <View style={{ marginHorizontal: 20, marginTop: 20 }}>
+          <Text
+            style={{
+              color: "#3A0A12",
+              fontSize: 16,
+              fontWeight: "800",
+              marginBottom: 12,
+            }}
+          >
+            Quick Actions
+          </Text>
+          <ActionButtons />
+        </View>
       </ScrollView>
     </View>
   );
