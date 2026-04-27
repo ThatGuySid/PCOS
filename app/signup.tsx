@@ -1,3 +1,4 @@
+import { useUser } from "@/context/UserContext";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -93,6 +94,8 @@ function InputField({
 export default function Signup() {
   const router = useRouter();
 
+  const { setUser } = useUser();
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -114,6 +117,8 @@ export default function Signup() {
       return;
     }
 
+    // Save entered name to global user context
+    setUser({ name });
     router.replace("/profile-setup");
   };
 

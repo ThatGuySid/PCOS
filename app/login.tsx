@@ -149,7 +149,7 @@ export default function LoginScreen() {
         duration: 150,
         useNativeDriver: true,
       }),
-    ]).start(() => router.replace("/profile-setup"));
+    ]).start(() => router.replace("/(tabs)"));
   };
 
   const handleSignup = () => {
