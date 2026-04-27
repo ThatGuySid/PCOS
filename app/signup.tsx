@@ -1,15 +1,18 @@
-import { useUser } from "@/context/UserContext";
+import { signUp } from "@/services/authService";
+import { createUserProfile } from "@/services/userProfileService";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 function PixelHeart() {
@@ -55,20 +58,9 @@ function InputField({
   rightIcon,
 }: any) {
   return (
-    <View className="mb-4">
-      <Text className="text-[#3A1A20] text-sm font-semibold mb-1.5 ml-1">
-        {label}
-      </Text>
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          backgroundColor: "#F2D0D5",
-          borderRadius: 50,
-          paddingHorizontal: 18,
-          paddingVertical: 14,
-        }}
-      >
+    <View style={styles.inputFieldContainer}>
+      <Text style={styles.inputLabel}>{label}</Text>
+      <View style={styles.inputWrapper}>
         <TextInput
           value={value}
           onChangeText={onChangeText}
@@ -79,11 +71,7 @@ function InputField({
           autoCapitalize={autoCapitalize ?? "none"}
           returnKeyType={returnKeyType}
           onSubmitEditing={onSubmitEditing}
-          style={{
-            flex: 1,
-            fontSize: 14,
-            color: "#3A1A20",
-          }}
+          style={styles.inputField}
         />
         {rightIcon}
       </View>
@@ -94,16 +82,15 @@ function InputField({
 export default function Signup() {
   const router = useRouter();
 
-  const { setUser } = useUser();
-
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSignup = () => {
+  const handleSignup = async () => {
     if (!name || !email || !password || !confirmPassword) {
       Alert.alert("Missing fields", "Please fill in all fields.");
       return;
@@ -112,48 +99,62 @@ export default function Signup() {
       Alert.alert("Password mismatch", "Passwords do not match.");
       return;
     }
-    if (password.length < 6) {
-      Alert.alert("Weak password", "Password must be at least 6 characters.");
+
+    setLoading(true);
+    const result = await signUp(name.trim(), email.trim(), password);
+    setLoading(false);
+
+    if (!result.success) {
+      Alert.alert("Sign up failed", result.error);
       return;
     }
 
-    // Save entered name to global user context
-    setUser({ name });
+    // Create a blank Firestore profile for this new user.
+    // Profile-setup.tsx will fill in the rest.
+    try {
+      await createUserProfile(result.user.uid, {
+        name: name.trim(),
+        avatarIndex: null,
+        ageGroup: null,
+        bmiHeightCm: null,
+        bmiWeightKg: null,
+        cycleDay: 1,
+        totalCycleDays: 31,
+        cyclePhase: "Menstrual",
+        periodLengthDays: 5,
+        cycleRegularity: null,
+        flowIntensity: null,
+        periodStartDateKey: null,
+        periodEndDateKey: null,
+        ovulationDateKey: null,
+        selectedPeriodDate: null,
+        periodDateKeys: [],
+        periodEntries: [],
+        symptoms: [],
+        symptomLogs: [],
+      });
+    } catch {
+      // Non-fatal: the profile will be created lazily on next sign-in.
+    }
+
     router.replace("/profile-setup");
   };
 
   return (
     <KeyboardAvoidingView
-      className="flex-1 bg-[#FDF0F2]"
+      style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView
-        contentContainerStyle={{
-          flexGrow: 1,
-          justifyContent: "center",
-          paddingHorizontal: 28,
-          paddingVertical: 60,
-        }}
+        contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
         {/* Logo */}
-        <View className="items-center mb-12">
+        <View style={styles.logoWrap}>
           <PixelHeart />
-          <Text
-            style={{
-              color: "#C0162C",
-              fontSize: 32,
-              fontWeight: "700",
-              fontFamily: "serif",
-              letterSpacing: -1,
-            }}
-          >
-            herFlow
-          </Text>
-          <Text className="text-[#8C5F66] text-sm mt-1.5">
-            Your personal cycle companion
-          </Text>
+          <Text style={styles.title}>herFlow</Text>
+          <Text style={styles.subtitle}>Your personal cycle companion</Text>
         </View>
 
         {/* Name */}
@@ -214,23 +215,103 @@ export default function Signup() {
         <TouchableOpacity
           onPress={handleSignup}
           activeOpacity={0.85}
-          className="bg-[#C0162C] rounded-full py-4 items-center mt-4"
+          disabled={loading}
+          style={[styles.signupButton, loading && { opacity: 0.7 }]}
         >
-          <Text className="text-white font-bold text-base tracking-wide">
-            Sign Up
-          </Text>
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.signupButtonText}>Sign Up</Text>
+          )}
         </TouchableOpacity>
 
         {/* Log in link */}
-        <View className="flex-row justify-center mt-5">
-          <Text className="text-[#8C5F66] text-sm">
-            Already have an account?{" "}
-          </Text>
+        <View style={styles.footerRow}>
+          <Text style={styles.footerText}>Already have an account? </Text>
           <TouchableOpacity onPress={() => router.replace("/login")}>
-            <Text className="text-[#C0162C] text-sm font-bold">Log In</Text>
+            <Text style={styles.footerLink}>Log In</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#FDF0F2",
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: "center",
+    paddingHorizontal: 28,
+    paddingVertical: 60,
+  },
+  logoWrap: {
+    alignItems: "center",
+    marginBottom: 48,
+  },
+  title: {
+    color: "#C0162C",
+    fontSize: 32,
+    fontWeight: "700",
+    marginTop: 8,
+  },
+  subtitle: {
+    color: "#8C5F66",
+    fontSize: 13,
+    marginTop: 6,
+  },
+  inputFieldContainer: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    color: "#3A1A20",
+    fontSize: 13,
+    fontWeight: "600",
+    marginBottom: 6,
+    marginLeft: 4,
+  },
+  inputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F2D0D5",
+    borderRadius: 50,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+  },
+  inputField: {
+    flex: 1,
+    fontSize: 14,
+    color: "#3A1A20",
+  },
+  signupButton: {
+    backgroundColor: "#C0162C",
+    borderRadius: 50,
+    paddingVertical: 16,
+    alignItems: "center",
+    marginTop: 16,
+  },
+  signupButtonText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+  },
+  footerRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 20,
+  },
+  footerText: {
+    color: "#8C5F66",
+    fontSize: 13,
+  },
+  footerLink: {
+    color: "#C0162C",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+});

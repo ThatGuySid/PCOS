@@ -2,10 +2,9 @@ import SplashScreen from "@/components/onboarding/SplashScreen";
 import { useUser } from "@/context/UserContext";
 import { Redirect } from "expo-router";
 import { useState } from "react";
-import { View } from "react-native";
 
 export default function Index() {
-  const { user, isHydrated } = useUser();
+  const { user } = useUser();
   const [splashDone, setSplashDone] = useState(false);
 
   const handleSplashFinish = () => {
@@ -16,12 +15,7 @@ export default function Index() {
     return <SplashScreen onFinish={handleSplashFinish} />;
   }
 
-  // Wait for context to hydrate from AsyncStorage before deciding route
-  if (!isHydrated) {
-    return <View style={{ flex: 1 }} />;
-  }
-
-  // After splash and hydration, check if user has completed profile setup
+  // Check if user has completed profile setup
   // If avatarIndex is null, they haven't gone through profile setup yet
   const isNewUser = user.avatarIndex === null;
 

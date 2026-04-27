@@ -1,6 +1,8 @@
+import { logIn } from "@/services/authService";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Animated,
   KeyboardAvoidingView,
@@ -130,10 +132,13 @@ export default function LoginScreen() {
 
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
+  const [loading, setLoading] = useState(false);
   const btnScale = useState(new Animated.Value(1))[0];
 
-  const handleLogin = () => {
-    if (!email || !pass) {
+  const handleSignup = () => router.push("/signup");
+
+  const handleLoginPress = async () => {
+    if (!email.trim() || !pass) {
       Alert.alert("Missing fields", "Please enter your email and password.");
       return;
     }
@@ -149,11 +154,17 @@ export default function LoginScreen() {
         duration: 150,
         useNativeDriver: true,
       }),
-    ]).start(() => router.replace("/(tabs)"));
-  };
+    ]).start();
 
-  const handleSignup = () => {
-    router.push("/signup");
+    setLoading(true);
+    const result = await logIn(email.trim(), pass);
+    setLoading(false);
+
+    if (result.success) {
+      router.replace("/(tabs)");
+    } else {
+      Alert.alert("Login failed", result.error);
+    }
   };
 
   return (
@@ -207,11 +218,16 @@ export default function LoginScreen() {
 
           <Animated.View style={{ transform: [{ scale: btnScale }] }}>
             <TouchableOpacity
-              onPress={handleLogin}
+              onPress={handleLoginPress}
               activeOpacity={0.9}
-              style={styles.loginButton}
+              disabled={loading}
+              style={[styles.loginButton, loading && { opacity: 0.7 }]}
             >
-              <Text style={styles.loginButtonText}>Sign In →</Text>
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.loginButtonText}>Sign In →</Text>
+              )}
             </TouchableOpacity>
           </Animated.View>
         </View>
@@ -227,97 +243,86 @@ export default function LoginScreen() {
   );
 }
 
-const COLORS = {
-  crimson: "#C0162C",
-  blush: "#F7DDE0",
-  offWhite: "#FBF5F5",
-  text: "#3A1A20",
-  mutedText: "#8C5F66",
-};
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FEF4F5",
+    backgroundColor: "#FDF0F2",
+    position: "relative",
   },
   scrollContent: {
-    flexGrow: 1,
-    justifyContent: "center",
-    paddingHorizontal: 28,
-    paddingVertical: 60,
+    paddingHorizontal: 20,
+    paddingTop: 80,
+    paddingBottom: 50,
+    alignItems: "center",
   },
   logoWrap: {
     alignItems: "center",
-    marginBottom: 48,
+    marginBottom: 40,
   },
   title: {
-    color: COLORS.crimson,
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: "700",
-    fontFamily: "serif",
+    color: "#C0162C",
+    marginTop: 8,
   },
   subtitle: {
-    color: COLORS.mutedText,
-    fontSize: 14,
-    marginTop: 6,
-    letterSpacing: 0.3,
+    fontSize: 13,
+    color: "#9A6070",
+    marginTop: 4,
   },
   card: {
+    width: "100%",
     backgroundColor: "#fff",
-    borderRadius: 28,
+    borderRadius: 20,
     padding: 24,
-    shadowColor: COLORS.crimson,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
-    elevation: 6,
     marginBottom: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
   },
   cardTitle: {
-    color: COLORS.text,
-    fontSize: 22,
-    fontWeight: "800",
-    marginBottom: 22,
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#3A0A12",
+    marginBottom: 20,
   },
   forgotButton: {
     alignSelf: "flex-end",
-    marginTop: -4,
+    marginTop: 8,
     marginBottom: 20,
   },
   forgotText: {
-    color: COLORS.crimson,
     fontSize: 12,
+    color: "#C0162C",
     fontWeight: "600",
   },
   loginButton: {
-    backgroundColor: COLORS.crimson,
-    borderRadius: 18,
-    paddingVertical: 18,
+    backgroundColor: "#C0162C",
+    paddingVertical: 14,
+    borderRadius: 14,
     alignItems: "center",
-    shadowColor: COLORS.crimson,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 16,
-    elevation: 10,
+    justifyContent: "center",
+    minHeight: 50,
   },
   loginButtonText: {
     color: "#fff",
     fontSize: 15,
-    fontWeight: "800",
-    letterSpacing: 1.2,
-    textTransform: "uppercase",
+    fontWeight: "700",
   },
   footerRow: {
     flexDirection: "row",
     justifyContent: "center",
+    alignItems: "center",
   },
   footerText: {
-    color: COLORS.mutedText,
-    fontSize: 14,
+    fontSize: 13,
+    color: "#9A6070",
   },
   footerLink: {
-    color: COLORS.crimson,
-    fontSize: 14,
+    fontSize: 13,
+    color: "#C0162C",
     fontWeight: "700",
   },
 });
