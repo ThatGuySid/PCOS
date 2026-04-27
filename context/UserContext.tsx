@@ -7,7 +7,7 @@
 //    still used as the offline/fast cache).
 //  - setUser() writes to Firestore whenever a user is signed in.
 
-import { subscribeToAuthState } from "@/services/authService";
+import { logOut, subscribeToAuthState } from "@/services/authService";
 import {
     computeCyclePhase,
     computeLiveCycleDay,
@@ -72,6 +72,8 @@ type UserData = {
 type UserContextType = {
   user: UserData;
   setUser: (data: Partial<UserData>) => void;
+  signOutUser: () => Promise<{ success: boolean; error?: string }>;
+  resetUser: () => Promise<{ success: boolean; error?: string }>;
   livePhase: CyclePhase;
   liveCycleDay: number;
   recentSymptoms: string[];
@@ -293,6 +295,46 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setUserState((prev) => ({ ...prev, ...data }));
   };
 
+  const signOutUser = async (): Promise<{
+    success: boolean;
+    error?: string;
+  }> => {
+    const result = await logOut();
+    if (result.success) {
+      hydratedUidRef.current = null;
+      setUserState(DEFAULT_USER);
+      await AsyncStorage.removeItem(USER_STORAGE_KEY).catch(() => {});
+    }
+    return result;
+  };
+
+  const resetUser = async (): Promise<{ success: boolean; error?: string }> => {
+    const resetState: UserData = {
+      ...DEFAULT_USER,
+      name: user.name?.trim() ? user.name : DEFAULT_USER.name,
+      avatarIndex: null,
+    };
+
+    // Keep server profile in sync before signing out so a fresh start persists.
+    if (firebaseUser) {
+      await updateUserProfile(firebaseUser.uid, toStoredUser(resetState)).catch(
+        () => {},
+      );
+    }
+
+    setUserState(resetState);
+    await AsyncStorage.setItem(
+      USER_STORAGE_KEY,
+      JSON.stringify(toStoredUser(resetState)),
+    ).catch(() => {});
+
+    const result = await logOut();
+    if (result.success) {
+      hydratedUidRef.current = null;
+    }
+    return result;
+  };
+
   const liveCycleDay = useMemo(
     () => computeLiveCycleDay(user.periodStartDateKey, user.totalCycleDays),
     [user.periodStartDateKey, user.totalCycleDays],
@@ -318,6 +360,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         setUser,
+        signOutUser,
+        resetUser,
         livePhase,
         liveCycleDay,
         recentSymptoms,

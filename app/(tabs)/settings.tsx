@@ -3,13 +3,13 @@ import { useUser } from "@/context/UserContext";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-  Alert,
-  Platform,
-  ScrollView,
-  Switch,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    Platform,
+    ScrollView,
+    Switch,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 function Orb({
@@ -144,18 +144,31 @@ const SECTIONS = [
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { resetUser } = useUser();
+  const { resetUser, signOutUser } = useUser();
 
   // Full reset — clears AsyncStorage and returns to onboarding
-  const handleResetAllData = () => {
-    resetUser();
+  const handleResetAllData = async () => {
+    const result = await resetUser();
+    if (!result.success) {
+      Alert.alert("Reset failed", result.error ?? "Please try again.");
+      return;
+    }
     router.replace("/onboarding");
+  };
+
+  const performSignOut = async () => {
+    const result = await signOutUser();
+    if (!result.success) {
+      Alert.alert("Sign out failed", result.error ?? "Please try again.");
+      return;
+    }
+    router.replace("/login");
   };
 
   const handleSignOut = () => {
     if (Platform.OS === "web") {
       if (confirm("Sign Out?\n\nYou'll be taken to the login screen.")) {
-        router.replace("/login");
+        void performSignOut();
       }
     } else {
       Alert.alert("Sign Out", "Are you sure you want to sign out?", [
@@ -163,7 +176,9 @@ export default function SettingsScreen() {
         {
           text: "Sign Out",
           style: "destructive",
-          onPress: () => router.replace("/login"),
+          onPress: () => {
+            void performSignOut();
+          },
         },
       ]);
     }
