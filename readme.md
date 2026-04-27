@@ -1,12 +1,13 @@
 # 🌸 HerFlow — PCOS Wellness & Care Platform
 
-HerFlow is a mobile-first wellness application designed for women managing Polycystic Ovary Syndrome (PCOS). It combines cycle tracking, AI-powered personalized guidance, medicine reminders, and secure health report storage into a single unified platform.
+HerFlow is a mobile-first wellness application designed for women managing Polycystic Ovary Syndrome (PCOS). It combines cycle tracking, AI-powered personalized guidance, medicine reminders, and local health tracking into a single unified platform.
 
 ---
 
 ## ✨ Features
 
 ### 🗓 Menstrual Cycle Tracking
+
 - Log period start and end dates
 - Automatic cycle length calculation
 - Menstrual phase detection — menstrual, follicular, ovulatory, luteal
@@ -14,32 +15,37 @@ HerFlow is a mobile-first wellness application designed for women managing Polyc
 - Automated reminders for upcoming periods and ovulation
 
 ### 😔 Mood & Symptom Logging
+
 - Daily mood tracking (happy, anxious, irritable, etc.)
 - Physical symptom logging (cramps, bloating, fatigue, pain intensity)
 - Calendar-linked entries for historical trend observation
 
 ### 🥗 Smart Food Guidance
+
 - AI-generated Indian diet–friendly food suggestions
 - Personalized based on current cycle phase, mood, and reported symptoms
 - Powered by Gemini API with controlled prompt engineering
 - Educational explanations for each suggestion — no medical diagnosis
 
 ### 🧘 Yoga & Exercise Recommendations
+
 - Phase and mood based yoga pose suggestions
 - Beginner-friendly routines focused on stress relief and hormonal balance
 - Web-grounded AI responses via Gemini API
 
 ### 💊 Medicine & Reminder System
+
 - Add medicines with name and dosage timing
 - Mark medicines as taken and track adherence history
 - Automated reminders for medicine, hydration, period prediction, and ovulation
 
 ### 📁 Health Report Vault
+
 - Securely upload and store medical reports (PDF/images)
-- Per-user document isolation via Firebase Storage
 - Easy retrieval and management from within the app
 
 ### 🤖 AI Chat Assistant
+
 - Context-aware PCOS wellness Q&A
 - Lifestyle and dietary guidance
 - Operates strictly in an educational, non-diagnostic capacity
@@ -48,23 +54,20 @@ HerFlow is a mobile-first wellness application designed for women managing Polyc
 
 ## 🛠 Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Frontend | React Native (Expo) |
-| Authentication | Firebase Authentication |
-| Database | Cloud Firestore |
-| File Storage | Firebase Storage |
-| AI & Chat | Gemini API (`gemini-1.5-flash`) |
-| Notifications | Expo Notifications |
+| Layer         | Technology                      |
+| ------------- | ------------------------------- |
+| Frontend      | React Native (Expo)             |
+| AI & Chat     | Gemini API (`gemini-1.5-flash`) |
+| Notifications | Expo Notifications              |
 
 ---
 
 ## 🏗 Architecture Overview
 
-HerFlow follows a **client-cloud-AI hybrid architecture** with three primary layers:
+HerFlow follows a **client-AI architecture** with three primary layers:
 
 - **Client Layer** — React Native app handling UI, user input, local notifications, and API communication
-- **Backend Layer** — Firebase services managing authentication, structured data storage (Firestore), and file storage
+- **Data Layer** — Local app state and device storage for user tracking data
 - **AI Layer** — Gemini API integration using structured prompt engineering to generate contextual, evidence-informed wellness guidance
 
 AI prompts are dynamically constructed from the user's current cycle phase, logged mood, and reported symptoms. The AI system is explicitly constrained to avoid clinical diagnosis or prescription recommendations.
@@ -95,9 +98,9 @@ AI Chat Assistant
 ## 🚀 Getting Started
 
 ### Prerequisites
+
 - Node.js 18+
 - Expo CLI
-- Firebase project with Firestore, Authentication, and Storage enabled
 - Gemini API key from [Google AI Studio](https://ai.google.dev)
 
 ### Installation
@@ -113,12 +116,6 @@ npm install
 Create a `.env` file in the root directory:
 
 ```env
-FIREBASE_API_KEY=your_firebase_api_key
-FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-FIREBASE_PROJECT_ID=your_project_id
-FIREBASE_STORAGE_BUCKET=your_project.appspot.com
-FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-FIREBASE_APP_ID=your_app_id
 GEMINI_API_KEY=your_gemini_api_key
 ```
 
@@ -143,21 +140,14 @@ npx expo build:android
 ```
 herflow/
 ├── app/
-│   ├── (auth)/          # Login, Register screens
-│   ├── (onboarding)/    # 3 onboarding slides + profile setup
-│   ├── (tabs)/          # Main app tabs
-│   │   ├── home/        # Calendar & cycle tracking
-│   │   ├── log/         # Mood & symptom logging
-│   │   ├── guidance/    # Food & yoga recommendations
-│   │   ├── medicine/    # Medicine tracker & reminders
-│   │   ├── vault/       # Health report storage
-│   │   └── chat/        # AI assistant
+│   ├── login.tsx        # Login screen
+│   ├── signup.tsx       # Sign up screen
+│   ├── onboarding.tsx   # Onboarding flow
+│   ├── profile-setup.tsx# Profile setup
+│   └── (tabs)/          # Main app tabs
 ├── components/          # Reusable UI components
 ├── services/
-│   ├── firebase.js      # Firebase config & helpers
-│   └── gemini.js        # Gemini API prompt handlers
-├── utils/
-│   └── cycleLogic.js    # Phase calculation, ovulation estimation
+│   └── *Service.ts      # Shared app logic
 ├── assets/
 └── .env
 ```
@@ -166,9 +156,9 @@ herflow/
 
 ## 👥 Team
 
+| Siddhant Giri
+| Anchal Lingwal
 
-| Siddhant Giri 
-| Anchal Lingwal 
 ---
 
 ## ⚠️ Disclaimer
