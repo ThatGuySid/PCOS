@@ -5,6 +5,7 @@ node_modules/
 
 # Expo
 .expo/
+.expo-shared/
 dist/
 web-build/
 expo-env.d.ts
@@ -35,6 +36,9 @@ yarn-error.*
 .env
 .env.*
 !.env.example
+
+# Firebase local state
+.firebase/
 
 # typescript
 *.tsbuildinfo
