@@ -2,13 +2,13 @@
 // Place this file at: services/authService.ts
 
 import {
-    AuthError,
-    createUserWithEmailAndPassword,
-    onAuthStateChanged,
-    signInWithEmailAndPassword,
-    signOut,
-    updateProfile,
-    User,
+  AuthError,
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut,
+  updateProfile,
+  User,
 } from "firebase/auth";
 import { auth } from "./firebaseConfig";
 
@@ -37,7 +37,7 @@ function friendlyError(err: AuthError): string {
     case "auth/network-request-failed":
       return "Network error. Check your connection and try again.";
     default:
-      return "Something went wrong. Please try again.";
+      return err.message || "Something went wrong. Please try again.";
   }
 }
 
