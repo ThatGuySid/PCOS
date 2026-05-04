@@ -1,11 +1,14 @@
 import { useEffect, useRef } from "react";
 import {
-    Animated,
-    Dimensions,
-    Text,
-    TouchableOpacity,
-    View,
+  Animated,
+  Dimensions,
+  ImageBackground,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import { SvgXml } from "react-native-svg";
 
 const { width, height } = Dimensions.get("window");
 
@@ -20,10 +23,73 @@ type Props = {
 };
 
 const SLIDE_DATA = [
-  { emoji: "🗓️", accent: "#C0162C", bg: "#FEF4F5", decorColor: "#F4A0B0" },
-  { emoji: "✨", accent: "#9B1B8E", bg: "#FDF0FC", decorColor: "#DDA0D8" },
-  { emoji: "🤖", accent: "#1B5EA0", bg: "#F0F4FE", decorColor: "#A0B8F4" },
+  { bg: "#FAD7DA", accent: "#D62E45", decorColor: "#F3B7BF" },
+  { bg: "#FAD7DA", accent: "#D62E45", decorColor: "#F3B7BF" },
+  { bg: "#FAD7DA", accent: "#D62E45", decorColor: "#F3B7BF" },
 ];
+
+function PatternMark({
+  x,
+  y,
+  rotate = "0deg",
+}: {
+  x: number;
+  y: number;
+  rotate?: string;
+}) {
+  return (
+    <View
+      style={{
+        position: "absolute",
+        left: x,
+        top: y,
+        width: 18,
+        height: 18,
+        opacity: 0.28,
+        transform: [{ rotate }],
+      }}
+    >
+      <View
+        style={{
+          position: "absolute",
+          width: 7,
+          height: 7,
+          borderRadius: 4,
+          borderWidth: 1,
+          borderColor: "#E7A4AE",
+          top: 0,
+          left: 6,
+        }}
+      />
+      <View
+        style={{
+          position: "absolute",
+          width: 7,
+          height: 7,
+          borderRadius: 4,
+          borderWidth: 1,
+          borderColor: "#E7A4AE",
+          top: 6,
+          left: 0,
+        }}
+      />
+      <View
+        style={{
+          position: "absolute",
+          width: 7,
+          height: 7,
+          borderRadius: 4,
+          borderWidth: 1,
+          borderColor: "#E7A4AE",
+          top: 6,
+          left: 12,
+        }}
+      />
+    </View>
+  );
+}
+
+const HEART_SVG = `<svg width="82" height="67" viewBox="0 0 82 67" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><rect width="82" height="67" fill="url(#pattern0_121_57)"/><defs><pattern id="pattern0_121_57" patternContentUnits="objectBoundingBox" width="1" height="1"><use xlink:href="#image0_121_57" transform="matrix(0.00817073 0 0 0.01 0.0914634 0)"/></pattern><image id="image0_121_57" width="100" height="100" preserveAspectRatio="none" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAACXBIWXMAAAsTAAALEwEAmpwYAAACJUlEQVR4nO2bMWocMRSGdYAUaQyGrN66NkTvAi5yDJc+Sg7gQ6R0kUPkJhuYF8YGFz6AwUFOt5kJSVCif7TfB1+1ePZJH4ZZRpMSAAAAAAAAAAAAAABsgYezyzeR/aaF33K5ajVXvVarueoa01aY934R5i8tnKx8ajVXvVarueoa01YgiBgEEYMgYhCkE/VOow527OvdTKOFR/bPS98xvXu/W5urfrb0N/Vareaqa1z6jq53X6+3gK02/k//c3L5ujZX/azXXHVPUi8I4gQJgqxDECdIEGQdgnifIFP227rIn7Ty2C2IlefFmX7M9dxxrsflufw2Kf6gOlWnhj9wCWIEeRlNgpiWBDEtCWJaEsS0JIhpSRDTkiCmJUFMS4KYlgQxLQliWhLEtCSIaUkQ05IgpiVBTEuCmJYEsYGDKB4DClVP9VxWqEoQ15IgriVBXEuCuJY9gxz2l+fT3j8cG7ty3X1j7B+7K9dLa697kkZ+6TNElXzpcw2CiEEQMQgiBkHEOOz97ZT945KRy1PvzYzfNZentXXUNaYR6Pr+n7V7j3EYCCIGQcQgiBgEEWMyvwsrX46dst/32/j63Qszmd+lU6Xnc/vpfzzv3hoEEYMgYhBEDIKIQZCNEC2f2/d83j0KQRAtgiBaBEG0CIJoEQTR4vA3h/G2dIhtFOZfHKTY1AGEUZgJosVMEC1mgmgxE2Q7h/EOoxxiAwAAAAAAAAAASLp8Bzs/UbBkrevkAAAAAElFTkSuQmCC"/></defs></svg>`;
 
 function FloatingPetal({
   delay,
@@ -126,62 +192,18 @@ export default function OnboardingSlide({
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: slide.bg }}>
-      {/* Floating petals */}
-      <FloatingPetal
-        delay={0}
-        x={30}
-        y={80}
-        size={120}
-        color={slide.decorColor}
+    <ImageBackground
+      source={require("@/assets/images/onboarding backgroud.jpg")}
+      style={{ flex: 1 }}
+      resizeMode="cover"
+      imageStyle={{ opacity: 1 }}
+    >
+      <View
+        style={{
+          ...StyleSheet.absoluteFillObject,
+          backgroundColor: "rgba(250, 215, 218, 0.22)",
+        }}
       />
-      <FloatingPetal
-        delay={1}
-        x={width - 100}
-        y={60}
-        size={180}
-        color={slide.decorColor}
-      />
-      <FloatingPetal
-        delay={2}
-        x={width / 2 - 60}
-        y={height * 0.15}
-        size={100}
-        color={slide.decorColor}
-      />
-      <FloatingPetal
-        delay={0.5}
-        x={20}
-        y={height * 0.6}
-        size={80}
-        color={slide.decorColor}
-      />
-      <FloatingPetal
-        delay={1.5}
-        x={width - 60}
-        y={height * 0.55}
-        size={90}
-        color={slide.decorColor}
-      />
-
-      {/* Skip */}
-      {!isLast && onSkip && (
-        <TouchableOpacity
-          onPress={onSkip}
-          style={{ position: "absolute", top: 56, right: 28, zIndex: 10 }}
-        >
-          <Text
-            style={{
-              color: slide.accent,
-              fontSize: 13,
-              fontWeight: "600",
-              opacity: 0.7,
-            }}
-          >
-            Skip
-          </Text>
-        </TouchableOpacity>
-      )}
 
       {/* Content */}
       <Animated.View
@@ -189,51 +211,46 @@ export default function OnboardingSlide({
           flex: 1,
           alignItems: "center",
           justifyContent: "center",
-          paddingHorizontal: 36,
+          paddingHorizontal: 32,
+          paddingTop: 46,
           opacity: fadeIn,
           transform: [{ translateY: slideUp }],
         }}
       >
-        {/* Big emoji icon */}
+        {/* Heart icon */}
         <View
           style={{
-            width: 120,
-            height: 120,
-            borderRadius: 40,
-            backgroundColor: slide.accent,
+            width: 82,
+            height: 67,
             alignItems: "center",
             justifyContent: "center",
-            marginBottom: 40,
-            shadowColor: slide.accent,
-            shadowOffset: { width: 0, height: 16 },
-            shadowOpacity: 0.35,
-            shadowRadius: 28,
-            elevation: 14,
+            marginBottom: 28,
           }}
         >
-          <Text style={{ fontSize: 52 }}>{slide.emoji}</Text>
+          <SvgXml xml={HEART_SVG} width={82} height={67} />
         </View>
 
         <Text
           style={{
-            color: slide.accent,
-            fontSize: 28,
-            fontWeight: "900",
+            color: "#C8233C",
+            fontSize: 23,
+            fontWeight: "800",
             textAlign: "center",
-            letterSpacing: -0.5,
-            lineHeight: 34,
-            marginBottom: 16,
+            letterSpacing: -0.3,
+            lineHeight: 28,
+            marginBottom: 10,
           }}
         >
           {title}
         </Text>
         <Text
           style={{
-            color: "#7A5060",
-            fontSize: 16,
+            color: "#7B646A",
+            fontSize: 13,
             textAlign: "center",
-            lineHeight: 26,
-            marginBottom: 60,
+            lineHeight: 18,
+            maxWidth: 240,
+            marginBottom: 34,
           }}
         >
           {description}
@@ -247,48 +264,52 @@ export default function OnboardingSlide({
             onPress={handlePress}
             activeOpacity={0.9}
             style={{
-              backgroundColor: slide.accent,
-              borderRadius: 20,
-              paddingVertical: 20,
+              backgroundColor: "#D76D7F",
+              borderRadius: 18,
+              paddingVertical: 16,
+              paddingHorizontal: 22,
               alignItems: "center",
-              shadowColor: slide.accent,
-              shadowOffset: { width: 0, height: 10 },
-              shadowOpacity: 0.4,
-              shadowRadius: 20,
-              elevation: 12,
+              justifyContent: "center",
+              flexDirection: "row",
+              gap: 10,
+              shadowColor: "#C0162C",
+              shadowOffset: { width: 0, height: 8 },
+              shadowOpacity: 0.22,
+              shadowRadius: 16,
+              elevation: 6,
+              minWidth: 180,
             }}
           >
             <Text
               style={{
                 color: "#fff",
                 fontSize: 15,
-                fontWeight: "800",
-                letterSpacing: 1.2,
-                textTransform: "uppercase",
+                fontWeight: "700",
               }}
             >
               {buttonLabel}
             </Text>
+            <Text style={{ color: "#fff", fontSize: 18, fontWeight: "700" }}>
+              →
+            </Text>
           </TouchableOpacity>
         </Animated.View>
 
-        {/* Step dots */}
-        <View style={{ flexDirection: "row", gap: 8, marginTop: 28 }}>
-          {[0, 1, 2].map((i) => (
-            <View
-              key={i}
+        {!isLast && onSkip && (
+          <TouchableOpacity onPress={onSkip} style={{ marginTop: 14 }}>
+            <Text
               style={{
-                width: i === slideIndex ? 24 : 8,
-                height: 8,
-                borderRadius: 4,
-                backgroundColor:
-                  i === slideIndex ? slide.accent : slide.decorColor,
-                opacity: i === slideIndex ? 1 : 0.5,
+                color: "#B79AA0",
+                fontSize: 12,
+                fontWeight: "500",
+                opacity: 0.9,
               }}
-            />
-          ))}
-        </View>
+            >
+              Skip
+            </Text>
+          </TouchableOpacity>
+        )}
       </Animated.View>
-    </View>
+    </ImageBackground>
   );
 }

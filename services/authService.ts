@@ -4,6 +4,7 @@
 import {
   AuthError,
   createUserWithEmailAndPassword,
+  deleteUser,
   onAuthStateChanged,
   signInWithEmailAndPassword,
   signOut,
@@ -32,6 +33,8 @@ function friendlyError(err: AuthError): string {
     case "auth/wrong-password":
     case "auth/invalid-credential":
       return "Incorrect email or password.";
+    case "auth/requires-recent-login":
+      return "Please sign in again and retry deleting your account.";
     case "auth/too-many-requests":
       return "Too many attempts. Please try again later.";
     case "auth/network-request-failed":
@@ -76,6 +79,26 @@ export async function logIn(
 export async function logOut(): Promise<{ success: boolean; error?: string }> {
   try {
     await signOut(auth);
+    return { success: true };
+  } catch (err) {
+    return {
+      success: false,
+      error: friendlyError(err as AuthError),
+    };
+  }
+}
+
+export async function deleteCurrentUserAccount(): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      return { success: false, error: "No signed-in account found." };
+    }
+
+    await deleteUser(user);
     return { success: true };
   } catch (err) {
     return {

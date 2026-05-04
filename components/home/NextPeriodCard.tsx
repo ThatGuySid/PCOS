@@ -67,7 +67,7 @@ export default function NextPeriodCard({
   return (
     <View
       style={{
-        backgroundColor: colors.bg,
+        backgroundColor: "#FAF4EB",
         borderRadius: 20,
         padding: 18,
         marginTop: 14,

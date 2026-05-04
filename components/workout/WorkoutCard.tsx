@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import { Image } from "react-native";
 
 export type Workout = {
   id: string;
@@ -43,26 +43,44 @@ export default function WorkoutCard({ workout }: Props) {
       }}
     >
       {/* Top row */}
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 8 }}>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 12,
+          marginBottom: 8,
+        }}
+      >
         <View
           style={{
             width: 48,
             height: 48,
-            borderRadius: 24,
-            backgroundColor: "#FDF0F2",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <Text style={{ fontSize: 24 }}>{workout.emoji}</Text>
+          <Image
+            source={require("@/assets/images/workout emoji.png")}
+            resizeMode="contain"
+            style={{ width: 48, height: 48 }}
+          />
         </View>
 
         <View style={{ flex: 1 }}>
-          <Text style={{ color: "#3A1A20", fontSize: 15, fontWeight: "700", marginBottom: 3 }}>
+          <Text
+            style={{
+              color: "#3A1A20",
+              fontSize: 15,
+              fontWeight: "700",
+              marginBottom: 3,
+            }}
+          >
             {workout.name}
           </Text>
           <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
-            <Text style={{ color: "#8C5F66", fontSize: 12 }}>⏱ {workout.duration}</Text>
+            <Text style={{ color: "#8C5F66", fontSize: 12 }}>
+              ⏱ {workout.duration}
+            </Text>
             <View
               style={{
                 backgroundColor: intensity.bg,
@@ -71,7 +89,13 @@ export default function WorkoutCard({ workout }: Props) {
                 paddingVertical: 2,
               }}
             >
-              <Text style={{ color: intensity.text, fontSize: 11, fontWeight: "700" }}>
+              <Text
+                style={{
+                  color: intensity.text,
+                  fontSize: 11,
+                  fontWeight: "700",
+                }}
+              >
                 {workout.intensity}
               </Text>
             </View>
@@ -103,7 +127,14 @@ export default function WorkoutCard({ workout }: Props) {
           marginBottom: 8,
         }}
       >
-        <Text style={{ color: "#C0162C", fontSize: 11, fontWeight: "700", marginBottom: 2 }}>
+        <Text
+          style={{
+            color: "#C0162C",
+            fontSize: 11,
+            fontWeight: "700",
+            marginBottom: 2,
+          }}
+        >
           Why this today?
         </Text>
         <Text style={{ color: "#8C5F66", fontSize: 12, lineHeight: 18 }}>
@@ -133,11 +164,20 @@ export default function WorkoutCard({ workout }: Props) {
                   marginTop: 1,
                 }}
               >
-                <Text style={{ color: "#fff", fontSize: 10, fontWeight: "700" }}>
+                <Text
+                  style={{ color: "#fff", fontSize: 10, fontWeight: "700" }}
+                >
                   {i + 1}
                 </Text>
               </View>
-              <Text style={{ color: "#3A1A20", fontSize: 13, flex: 1, lineHeight: 20 }}>
+              <Text
+                style={{
+                  color: "#3A1A20",
+                  fontSize: 13,
+                  flex: 1,
+                  lineHeight: 20,
+                }}
+              >
                 {step}
               </Text>
             </View>

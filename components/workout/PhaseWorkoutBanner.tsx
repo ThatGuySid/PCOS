@@ -1,5 +1,5 @@
-import { View, Text } from "react-native";
 import { CyclePhase } from "@/context/UserContext";
+import { Image, Text, View } from "react-native";
 
 type Props = {
   phase: CyclePhase;
@@ -9,31 +9,27 @@ type Props = {
 
 const PHASE_CONFIG: Record<
   CyclePhase,
-  { emoji: string; color: string; bg: string; tagline: string; energy: string }
+  { color: string; bg: string; tagline: string; energy: string }
 > = {
   Menstrual: {
-    emoji: "🌙",
     color: "#C0162C",
     bg: "#F7DDE0",
     tagline: "Rest & restore — your body is working hard.",
     energy: "Low energy · Gentle movement",
   },
   Follicular: {
-    emoji: "🌱",
     color: "#15803D",
     bg: "#DCFCE7",
     tagline: "Energy is rising — great time to build strength.",
     energy: "Rising energy · Cardio friendly",
   },
   Ovulation: {
-    emoji: "⚡",
     color: "#D97706",
     bg: "#FEF3C7",
     tagline: "Peak power — push your limits today!",
     energy: "Peak energy · High intensity OK",
   },
   Luteal: {
-    emoji: "🍂",
     color: "#7C3AED",
     bg: "#EDE9FE",
     tagline: "Wind down — focus on low-impact and calm.",
@@ -41,7 +37,11 @@ const PHASE_CONFIG: Record<
   },
 };
 
-export default function PhaseWorkoutBanner({ phase, cycleDay, totalCycleDays }: Props) {
+export default function PhaseWorkoutBanner({
+  phase,
+  cycleDay,
+  totalCycleDays,
+}: Props) {
   const cfg = PHASE_CONFIG[phase];
 
   return (
@@ -55,8 +55,28 @@ export default function PhaseWorkoutBanner({ phase, cycleDay, totalCycleDays }: 
         borderLeftColor: cfg.color,
       }}
     >
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 8 }}>
-        <Text style={{ fontSize: 28 }}>{cfg.emoji}</Text>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 10,
+          marginBottom: 8,
+        }}
+      >
+        <View
+          style={{
+            width: 56,
+            height: 56,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Image
+            source={require("@/assets/images/workout emoji.png")}
+            resizeMode="contain"
+            style={{ width: 56, height: 56 }}
+          />
+        </View>
         <View>
           <Text style={{ color: cfg.color, fontSize: 18, fontWeight: "800" }}>
             {phase} Phase
@@ -66,7 +86,14 @@ export default function PhaseWorkoutBanner({ phase, cycleDay, totalCycleDays }: 
           </Text>
         </View>
       </View>
-      <Text style={{ color: "#374151", fontSize: 13, lineHeight: 20, marginBottom: 6 }}>
+      <Text
+        style={{
+          color: "#374151",
+          fontSize: 13,
+          lineHeight: 20,
+          marginBottom: 6,
+        }}
+      >
         {cfg.tagline}
       </Text>
       <View

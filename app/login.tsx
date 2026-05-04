@@ -2,45 +2,18 @@ import { logIn } from "@/services/authService";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Animated,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Animated,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
-
-function Orb({
-  size,
-  color,
-  style,
-}: {
-  size: number;
-  color: string;
-  style?: object;
-}) {
-  return (
-    <View
-      pointerEvents="none"
-      style={[
-        {
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          backgroundColor: color,
-          position: "absolute",
-          opacity: 0.15,
-        },
-        style,
-      ]}
-    />
-  );
-}
 
 function FloatingInput({
   label,
@@ -172,10 +145,6 @@ export default function LoginScreen() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <Orb size={300} color="#E8556A" style={{ top: -120, right: -100 }} />
-      <Orb size={200} color="#F4A0B0" style={{ bottom: 100, left: -80 }} />
-      <Orb size={120} color="#C0162C" style={{ bottom: 300, right: -30 }} />
-
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="always"

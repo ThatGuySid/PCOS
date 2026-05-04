@@ -1,16 +1,17 @@
-import { useState, useRef } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-} from "react-native";
-import { useRouter } from "expo-router";
 import ChatBubble from "@/components/health/ChatBubble";
-import QuickQuestions from "@/components/health/QuickQuestions";
 import ChatInput from "@/components/health/ChatInput";
+import QuickQuestions from "@/components/health/QuickQuestions";
+import { useRouter } from "expo-router";
+import { useRef, useState } from "react";
+import {
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Message = {
@@ -28,7 +29,11 @@ const getMockedResponse = (userMessage: string): string => {
   if (msg.includes("symptom") || msg.includes("pcos symptom")) {
     return "PCOS (Polycystic Ovary Syndrome) and PCOD (Polycystic Ovary Disease) commonly present with irregular or missed periods, excessive facial/body hair growth (hirsutism), acne, weight gain, and difficulty conceiving.";
   }
-  if (msg.includes("weight") || msg.includes("loose weight") || msg.includes("lose weight")) {
+  if (
+    msg.includes("weight") ||
+    msg.includes("loose weight") ||
+    msg.includes("lose weight")
+  ) {
     return "For PCOS-related weight management, focus on a low-glycemic diet, regular low-impact exercise like yoga or walking, stress reduction, and adequate sleep. Always consult your doctor before starting any new regimen.";
   }
   if (msg.includes("irregular period") || msg.includes("irregular")) {
@@ -65,7 +70,7 @@ export default function AIAssistantScreen() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "0",
-      text: "Hi, I'm Your Health Assistant!\nYou can call me \"buddy\".\nHow may I help you?",
+      text: 'Hi, I\'m Your Health Assistant!\nYou can call me "buddy".\nHow may I help you?',
       isUser: false,
       timestamp: "",
     },
@@ -138,21 +143,11 @@ export default function AIAssistantScreen() {
           elevation: 2,
         }}
       >
-        {/* Avatar circle */}
-        <View
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: 22,
-            backgroundColor: "#E8637A",
-            alignItems: "center",
-            justifyContent: "center",
-            borderWidth: 2,
-            borderColor: "#C0162C",
-          }}
-        >
-          <Text style={{ fontSize: 22 }}>💬</Text>
-        </View>
+        <Image
+          source={require("@/assets/images/chatAI.png")}
+          resizeMode="contain"
+          style={{ width: 48, height: 48 }}
+        />
 
         <View>
           <Text style={{ color: "#3A1A20", fontSize: 15, fontWeight: "800" }}>

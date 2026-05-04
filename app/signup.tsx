@@ -3,16 +3,16 @@ import { createUserProfile } from "@/services/userProfileService";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 function PixelHeart() {
@@ -160,7 +160,7 @@ export default function Signup() {
         {/* Name */}
         <InputField
           label="Name"
-          placeholder="Your full name"
+          placeholder="Your name"
           value={name}
           onChangeText={setName}
           autoCapitalize="words"

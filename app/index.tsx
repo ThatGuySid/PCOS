@@ -4,7 +4,7 @@ import { Redirect } from "expo-router";
 import { useState } from "react";
 
 export default function Index() {
-  const { user } = useUser();
+  const { firebaseUser } = useUser();
   const [splashDone, setSplashDone] = useState(false);
 
   const handleSplashFinish = () => {
@@ -15,13 +15,5 @@ export default function Index() {
     return <SplashScreen onFinish={handleSplashFinish} />;
   }
 
-  // Check if user has completed profile setup
-  // If avatarIndex is null, they haven't gone through profile setup yet
-  const isNewUser = user.avatarIndex === null;
-
-  if (isNewUser) {
-    return <Redirect href="/onboarding" />;
-  } else {
-    return <Redirect href="/(tabs)" />;
-  }
+  return <Redirect href={firebaseUser ? "/(tabs)" : "/onboarding"} />;
 }

@@ -1,10 +1,10 @@
 import PeriodCalendar from "@/components/health/PeriodCalendar";
 import {
-  buildDateRangeKeys,
-  flattenUniqueDateKeys,
-  getLatestPeriodEntry,
-  sortPeriodEntriesByStartDate,
-  toDateKey,
+    buildDateRangeKeys,
+    flattenUniqueDateKeys,
+    getLatestPeriodEntry,
+    sortPeriodEntriesByStartDate,
+    toDateKey,
 } from "@/constants/cycleUtils";
 import { useUser } from "@/context/UserContext";
 import { useEffect, useState } from "react";
@@ -199,7 +199,7 @@ export default function ActionButtons() {
   return (
     <View
       style={{
-        backgroundColor: "#FFF4F0",
+        backgroundColor: "#FAF4EB",
         borderRadius: 28,
         padding: 14,
         borderWidth: 1,
@@ -268,7 +268,7 @@ export default function ActionButtons() {
               borderBottomWidth: 12,
               borderLeftColor: "transparent",
               borderRightColor: "transparent",
-              borderBottomColor: "#FFFFFF",
+              borderBottomColor: "#FAF4EB",
             }}
           />
 
@@ -295,7 +295,7 @@ export default function ActionButtons() {
               activeOpacity={0.85}
               style={{
                 flex: 2,
-                backgroundColor: "#fff",
+                backgroundColor: "#FAF4EB",
                 borderRadius: 50,
                 paddingVertical: 9,
                 paddingHorizontal: 6,
@@ -316,7 +316,7 @@ export default function ActionButtons() {
               activeOpacity={0.85}
               style={{
                 flex: 1,
-                backgroundColor: "#fff",
+                backgroundColor: "#FAF4EB",
                 borderRadius: 50,
                 paddingVertical: 9,
                 paddingHorizontal: 6,
@@ -407,13 +407,13 @@ export default function ActionButtons() {
               borderBottomWidth: 12,
               borderLeftColor: "transparent",
               borderRightColor: "transparent",
-              borderBottomColor: "#FFFFFF",
+              borderBottomColor: "#FAF4EB",
             }}
           />
 
           <View
             style={{
-              backgroundColor: "#fff",
+              backgroundColor: "#FAF4EB",
               borderRadius: 18,
               padding: 14,
               shadowColor: "#C0162C",
@@ -455,7 +455,7 @@ export default function ActionButtons() {
                       borderRadius: 50,
                       borderWidth: 1.5,
                       borderColor: selected ? "#C0162C" : "#E8A0A8",
-                      backgroundColor: selected ? "#F7DDE0" : "#fff",
+                      backgroundColor: selected ? "#F7DDE0" : "#FAF4EB",
                     }}
                   >
                     <Text

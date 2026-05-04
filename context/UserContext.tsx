@@ -7,14 +7,19 @@
 //    still used as the offline/fast cache).
 //  - setUser() writes to Firestore whenever a user is signed in.
 
-import { logOut, subscribeToAuthState } from "@/services/authService";
+import {
+    deleteCurrentUserAccount,
+    logOut,
+    subscribeToAuthState,
+} from "@/services/authService";
 import {
     computeCyclePhase,
     computeLiveCycleDay,
 } from "@/services/cycleService";
-import { toDateKey } from "@/services/dateService";
+import { fromDateKey, toDateKey } from "@/services/dateService";
 import { getRecentSymptoms } from "@/services/symptomService";
 import {
+    deleteUserProfile,
     getUserProfile,
     updateUserProfile,
 } from "@/services/userProfileService";
@@ -76,7 +81,10 @@ type UserContextType = {
   resetUser: () => Promise<{ success: boolean; error?: string }>;
   livePhase: CyclePhase;
   liveCycleDay: number;
+  predictedNextPeriodDateKey: string | null;
   recentSymptoms: string[];
+  isProfileHydrated: boolean;
+  hasProfileData: boolean;
   /** The signed-in Firebase user, or null when logged out. */
   firebaseUser: User | null;
   isAuthLoading: boolean;
@@ -196,6 +204,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [isHydrated, setIsHydrated] = useState(false);
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isProfileHydrated, setIsProfileHydrated] = useState(false);
+  const [hasProfileData, setHasProfileData] = useState(false);
 
   const hydratedUidRef = useRef<string | null>(null);
 
@@ -206,10 +216,22 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
       if (fbUser && hydratedUidRef.current !== fbUser.uid) {
         hydratedUidRef.current = fbUser.uid;
+        setIsProfileHydrated(false);
+        setHasProfileData(false);
 
         try {
           const profile = await getUserProfile(fbUser.uid);
           if (profile) {
+            const profileHasData = Object.entries(profile).some(
+              ([key, value]) => {
+                if (key === "name") return false;
+                if (value == null) return false;
+                if (Array.isArray(value)) return value.length > 0;
+                return true;
+              },
+            );
+
+            setHasProfileData(profileHasData);
             setUserState((prev) => ({
               ...prev,
               ...fromFirestoreProfile(profile as Record<string, unknown>),
@@ -225,11 +247,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
           }
         } catch {
           // Offline: AsyncStorage hydration (handled below) will cover this.
+        } finally {
+          setIsProfileHydrated(true);
         }
       }
 
       if (!fbUser) {
         hydratedUidRef.current = null;
+        setIsProfileHydrated(false);
+        setHasProfileData(false);
       }
     });
 
@@ -309,30 +335,36 @@ export function UserProvider({ children }: { children: ReactNode }) {
   };
 
   const resetUser = async (): Promise<{ success: boolean; error?: string }> => {
-    const resetState: UserData = {
-      ...DEFAULT_USER,
-      name: user.name?.trim() ? user.name : DEFAULT_USER.name,
-      avatarIndex: null,
-    };
-
-    // Keep server profile in sync before signing out so a fresh start persists.
-    if (firebaseUser) {
-      await updateUserProfile(firebaseUser.uid, toStoredUser(resetState)).catch(
-        () => {},
-      );
+    if (!firebaseUser) {
+      return { success: false, error: "No signed-in account found." };
     }
 
-    setUserState(resetState);
-    await AsyncStorage.setItem(
-      USER_STORAGE_KEY,
-      JSON.stringify(toStoredUser(resetState)),
-    ).catch(() => {});
-
-    const result = await logOut();
-    if (result.success) {
-      hydratedUidRef.current = null;
+    if (firestoreSyncTimer.current) {
+      clearTimeout(firestoreSyncTimer.current);
+      firestoreSyncTimer.current = null;
     }
-    return result;
+
+    const uid = firebaseUser.uid;
+
+    try {
+      await deleteUserProfile(uid);
+    } catch {
+      return {
+        success: false,
+        error: "Could not delete your saved data. Please try again.",
+      };
+    }
+
+    const authResult = await deleteCurrentUserAccount();
+    if (!authResult.success) {
+      return authResult;
+    }
+
+    hydratedUidRef.current = null;
+    setUserState(DEFAULT_USER);
+    await AsyncStorage.removeItem(USER_STORAGE_KEY).catch(() => {});
+
+    return { success: true };
   };
 
   const liveCycleDay = useMemo(
@@ -355,6 +387,17 @@ export function UserProvider({ children }: { children: ReactNode }) {
     [user.symptomLogs],
   );
 
+  const predictedNextPeriodDateKey = useMemo(() => {
+    if (!user.periodStartDateKey) return null;
+
+    const start = fromDateKey(user.periodStartDateKey);
+    if (!start) return null;
+
+    const nextStart = new Date(start);
+    nextStart.setDate(nextStart.getDate() + user.totalCycleDays);
+    return toDateKey(nextStart);
+  }, [user.periodStartDateKey, user.totalCycleDays]);
+
   return (
     <UserContext.Provider
       value={{
@@ -364,7 +407,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
         resetUser,
         livePhase,
         liveCycleDay,
+        predictedNextPeriodDateKey,
         recentSymptoms,
+        isProfileHydrated,
+        hasProfileData,
         firebaseUser,
         isAuthLoading,
       }}

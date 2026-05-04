@@ -2,17 +2,18 @@
 // Place this file at: services/userProfileService.ts
 
 import {
-    CyclePhase,
-    PeriodEntry,
-    SymptomLogEntry,
+  CyclePhase,
+  PeriodEntry,
+  SymptomLogEntry,
 } from "@/context/UserContext";
 import {
-    doc,
-    getDoc,
-    serverTimestamp,
-    setDoc,
-    Timestamp,
-    updateDoc,
+  deleteDoc,
+  doc,
+  getDoc,
+  serverTimestamp,
+  setDoc,
+  Timestamp,
+  updateDoc,
 } from "firebase/firestore";
 import { db } from "./firebaseConfig";
 
@@ -61,6 +62,10 @@ export async function getUserProfile(
   const snap = await getDoc(userDoc(uid));
   if (!snap.exists()) return null;
   return snap.data() as FirestoreUserProfile;
+}
+
+export async function deleteUserProfile(uid: string): Promise<void> {
+  await deleteDoc(userDoc(uid));
 }
 
 export async function updateUserProfile(

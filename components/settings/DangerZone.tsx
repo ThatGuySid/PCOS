@@ -9,7 +9,7 @@ export default function DangerZone({ onResetAllData }: Props) {
     if (Platform.OS === "web") {
       // Use browser confirm on web
       const confirmed = confirm(
-        "Reset All Data?\n\nThis will permanently delete all your period logs, symptom history, and profile settings. This cannot be undone.",
+        "Delete Account?\n\nThis will permanently delete your saved data and your account login. You can sign up again with the same email afterward.",
       );
       if (confirmed) {
         onResetAllData();
@@ -17,12 +17,12 @@ export default function DangerZone({ onResetAllData }: Props) {
     } else {
       // Use native Alert on mobile
       Alert.alert(
-        "Reset All Data",
-        "This will permanently delete all your period logs, symptom history, and profile settings. This cannot be undone.",
+        "Delete Account",
+        "This will permanently delete your saved data and your account login. You can sign up again with the same email afterward.",
         [
           { text: "Cancel", style: "cancel" },
           {
-            text: "Reset",
+            text: "Delete",
             style: "destructive",
             onPress: onResetAllData,
           },
@@ -59,8 +59,8 @@ export default function DangerZone({ onResetAllData }: Props) {
           lineHeight: 18,
         }}
       >
-        Resetting will permanently erase all your data — period logs, symptom
-        history, and profile info. You'll start fresh.
+        Deleting will permanently erase your saved data and remove the account
+        login. You can create a new account with the same email later.
       </Text>
       <TouchableOpacity
         onPress={handleReset}
@@ -73,7 +73,7 @@ export default function DangerZone({ onResetAllData }: Props) {
         }}
       >
         <Text style={{ color: "#fff", fontSize: 14, fontWeight: "700" }}>
-          🗑 Reset All Data
+          🗑 Delete Account & Data
         </Text>
       </TouchableOpacity>
     </View>

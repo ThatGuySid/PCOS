@@ -12,31 +12,7 @@ import {
     View,
 } from "react-native";
 
-function Orb({
-  size,
-  color,
-  style,
-}: {
-  size: number;
-  color: string;
-  style?: object;
-}) {
-  return (
-    <View
-      style={[
-        {
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          backgroundColor: color,
-          position: "absolute",
-          opacity: 0.12,
-        },
-        style,
-      ]}
-    />
-  );
-}
+// decorative orbs removed from settings
 
 function SettingRow({
   icon,
@@ -146,14 +122,14 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { resetUser, signOutUser } = useUser();
 
-  // Full reset — clears AsyncStorage and returns to onboarding
+  // Full reset — deletes the account and returns to the login screen
   const handleResetAllData = async () => {
     const result = await resetUser();
     if (!result.success) {
       Alert.alert("Reset failed", result.error ?? "Please try again.");
       return;
     }
-    router.replace("/onboarding");
+    router.replace("/login");
   };
 
   const performSignOut = async () => {
@@ -185,9 +161,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#FEF4F5" }}>
-      <Orb size={200} color="#E8556A" style={{ top: -60, right: -50 }} />
-
+    <View style={{ flex: 1, backgroundColor: "#FAF4EB" }}>
       <ScrollView
         contentContainerStyle={{ paddingBottom: 48 }}
         showsVerticalScrollIndicator={false}

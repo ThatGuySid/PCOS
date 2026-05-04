@@ -2,17 +2,17 @@ import { useUser } from "@/context/UserContext";
 import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import {
-  Animated,
-  Dimensions,
-  Image,
-  ImageSourcePropType,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Animated,
+    Dimensions,
+    Image,
+    ImageSourcePropType,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 const { width } = Dimensions.get("window");
@@ -31,32 +31,7 @@ const AVATARS: ImageSourcePropType[] = [
 const AGE_GROUPS = ["10–19", "20–35", "36–50", "50 & above"];
 const FLOW_OPTIONS = ["Light", "Medium", "Heavy"] as const;
 
-// ─── Decorative petal/blob SVG-like circles ───────────────────────────────
-function Orb({
-  size,
-  color,
-  style,
-}: {
-  size: number;
-  color: string;
-  style?: object;
-}) {
-  return (
-    <View
-      style={[
-        {
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          backgroundColor: color,
-          position: "absolute",
-          opacity: 0.18,
-        },
-        style,
-      ]}
-    />
-  );
-}
+// (Decorative orbs removed)
 
 // ─── Section heading ──────────────────────────────────────────────────────
 function SectionLabel({ children }: { children: string }) {
@@ -396,14 +371,10 @@ export default function ProfileSetupPage() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: "#FEF4F5" }}
+      style={{ flex: 1, backgroundColor: "#FAF4EB" }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      {/* ── Background orbs ── */}
-      <Orb size={260} color="#E8556A" style={{ top: -80, right: -80 }} />
-      <Orb size={180} color="#F4A0B0" style={{ top: 120, left: -70 }} />
-      <Orb size={140} color="#C0162C" style={{ bottom: 200, right: -40 }} />
-      <Orb size={100} color="#F9C8D0" style={{ bottom: 80, left: 20 }} />
+      {/* background orbs removed */}
 
       <ScrollView
         contentContainerStyle={{

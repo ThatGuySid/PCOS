@@ -3,6 +3,7 @@ import { useState } from "react";
 import {
   Alert,
   Image,
+  ImageBackground,
   ImageSourcePropType,
   Modal,
   ScrollView,
@@ -47,31 +48,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Orb({
-  size,
-  color,
-  style,
-}: {
-  size: number;
-  color: string;
-  style?: object;
-}) {
-  return (
-    <View
-      style={[
-        {
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          backgroundColor: color,
-          position: "absolute",
-          opacity: 0.12,
-        },
-        style,
-      ]}
-    />
-  );
-}
+// decorative orbs removed from profile screen
 
 // ── Inline Edit Modal ─────────────────────────────────────────────────────────
 function EditProfileModal({
@@ -478,9 +455,11 @@ export default function ProfileScreen() {
       : null;
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#FEF4F5" }}>
-      <Orb size={220} color="#E8556A" style={{ top: -80, right: -60 }} />
-
+    <ImageBackground
+      source={require("@/assets/images/onboarding backgroud.jpg")}
+      style={{ flex: 1 }}
+      imageStyle={{ resizeMode: "cover" }}
+    >
       <EditProfileModal visible={editOpen} onClose={() => setEditOpen(false)} />
 
       <ScrollView
@@ -499,7 +478,6 @@ export default function ProfileScreen() {
             overflow: "hidden",
           }}
         >
-          <Orb size={180} color="#fff" style={{ top: -60, right: -40 }} />
           <View
             style={{
               width: 90,
@@ -667,6 +645,6 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </View>
+    </ImageBackground>
   );
 }
