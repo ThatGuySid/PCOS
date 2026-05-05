@@ -132,6 +132,7 @@ export default function Signup() {
         symptoms: [],
         symptomLogs: [],
         profileComplete: false,
+        hasStartedJourney: false,
       });
     } catch {
       // Non-fatal: the profile will be created lazily on next sign-in.

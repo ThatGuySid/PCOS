@@ -38,6 +38,7 @@ export type FirestoreUserProfile = {
   symptoms: string[];
   symptomLogs: SymptomLogEntry[];
   profileComplete: boolean;
+  hasStartedJourney: boolean;
   updatedAt?: Timestamp;
   createdAt?: Timestamp;
 };

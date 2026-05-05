@@ -377,6 +377,7 @@ export default function ProfileSetupPage() {
       cycleRegularity: regularity,
       flowIntensity,
       profileComplete: true,
+      hasStartedJourney: true,
     });
     router.replace("/(tabs)");
   };

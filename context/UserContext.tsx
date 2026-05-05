@@ -1,22 +1,9 @@
-// UserContext.tsx  (Firebase-backed version)
-// Drop this in at: context/UserContext.tsx
-//
-// Changes from the original:
-//  - Listens to Firebase Auth state; exposes `firebaseUser`.
-//  - On sign-in, merges Firestore profile into local state (AsyncStorage
-//    still used as the offline/fast cache).
-//  - setUser() writes to Firestore whenever a user is signed in.
-
 import {
     deleteCurrentUserAccount,
     logOut,
     subscribeToAuthState,
 } from "@/services/authService";
-import {
-    computeCyclePhase,
-    computeLiveCycleDay,
-} from "@/services/cycleService";
-import { fromDateKey, toDateKey } from "@/services/dateService";
+import { computeCycleSnapshot } from "@/services/cycleService";
 import { getRecentSymptoms } from "@/services/symptomService";
 import {
     deleteUserProfile,
@@ -73,6 +60,7 @@ type UserData = {
   symptoms: string[];
   symptomLogs: SymptomLogEntry[];
   profileComplete: boolean;
+  hasStartedJourney: boolean;
 };
 
 type UserContextType = {
@@ -80,8 +68,8 @@ type UserContextType = {
   setUser: (data: Partial<UserData>) => void;
   signOutUser: () => Promise<{ success: boolean; error?: string }>;
   resetUser: () => Promise<{ success: boolean; error?: string }>;
-  livePhase: CyclePhase;
-  liveCycleDay: number;
+  livePhase: CyclePhase | null;
+  liveCycleDay: number | null;
   predictedNextPeriodDateKey: string | null;
   recentSymptoms: string[];
   isProfileHydrated: boolean;
@@ -98,47 +86,22 @@ const DEFAULT_USER: UserData = {
   ageGroup: null,
   bmiHeightCm: null,
   bmiWeightKg: null,
-  cycleDay: 1,
+  cycleDay: 0,
   totalCycleDays: 31,
   cyclePhase: "Menstrual",
-  periodLengthDays: 5,
+  periodLengthDays: null,
   cycleRegularity: null,
   flowIntensity: null,
-  periodStartDateKey: toDateKey(
-    new Date(new Date().getFullYear(), new Date().getMonth(), 3),
-  ),
-  periodEndDateKey: toDateKey(
-    new Date(new Date().getFullYear(), new Date().getMonth(), 7),
-  ),
+  periodStartDateKey: null,
+  periodEndDateKey: null,
   ovulationDateKey: null,
-  selectedPeriodDate: new Date(),
-  periodDateKeys: [
-    toDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 3)),
-    toDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 4)),
-    toDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 5)),
-    toDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 6)),
-    toDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 7)),
-  ],
-  periodEntries: [
-    {
-      startDateKey: toDateKey(
-        new Date(new Date().getFullYear(), new Date().getMonth(), 3),
-      ),
-      endDateKey: toDateKey(
-        new Date(new Date().getFullYear(), new Date().getMonth(), 7),
-      ),
-      dateKeys: [
-        toDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 3)),
-        toDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 4)),
-        toDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 5)),
-        toDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 6)),
-        toDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 7)),
-      ],
-    },
-  ],
+  selectedPeriodDate: null,
+  periodDateKeys: [],
+  periodEntries: [],
   symptoms: [],
   symptomLogs: [],
   profileComplete: false,
+  hasStartedJourney: false,
 };
 
 const USER_STORAGE_KEY = "@herflow/user";
@@ -197,21 +160,6 @@ function fromFirestoreProfile(raw: Record<string, unknown>): Partial<UserData> {
   return { ...(raw as Partial<UserData>), selectedPeriodDate };
 }
 
-function isLegacyProfileComplete(profile: Partial<UserData>): boolean {
-  return (
-    typeof profile.name === "string" &&
-    profile.name.trim().length > 0 &&
-    profile.avatarIndex !== null &&
-    profile.ageGroup !== null &&
-    profile.bmiHeightCm !== null &&
-    profile.bmiWeightKg !== null &&
-    profile.totalCycleDays !== null &&
-    profile.periodLengthDays !== null &&
-    profile.cycleRegularity !== null &&
-    profile.flowIntensity !== null
-  );
-}
-
 // ── Context ───────────────────────────────────────────────────────────────────
 const UserContext = createContext<UserContextType | null>(null);
 
@@ -242,9 +190,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
             const normalizedProfile = fromFirestoreProfile(
               profile as Record<string, unknown>,
             );
-            const profileHasData =
-              Boolean(normalizedProfile.profileComplete) ||
-              isLegacyProfileComplete(normalizedProfile);
+            const profileHasData = Boolean(normalizedProfile.hasStartedJourney);
 
             setHasProfileData(profileHasData);
             setUserState((prev) => ({
@@ -334,7 +280,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const setUser = (data: Partial<UserData>) => {
     setUserState((prev) => ({ ...prev, ...data }));
-    setHasProfileData(Boolean(data.profileComplete));
+    if (typeof data.hasStartedJourney === "boolean") {
+      setHasProfileData(data.hasStartedJourney);
+    }
   };
 
   const signOutUser = async (): Promise<{
@@ -385,36 +333,31 @@ export function UserProvider({ children }: { children: ReactNode }) {
     return { success: true };
   };
 
-  const liveCycleDay = useMemo(
-    () => computeLiveCycleDay(user.periodStartDateKey, user.totalCycleDays),
-    [user.periodStartDateKey, user.totalCycleDays],
+  const cycleSnapshot = useMemo(
+    () =>
+      computeCycleSnapshot({
+        periodEntries: user.periodEntries,
+        fallbackCycleLength: user.totalCycleDays,
+        periodLengthDays: user.periodLengthDays ?? 5,
+        lastPeriodStartKey: user.periodStartDateKey,
+      }),
+    [
+      user.periodEntries,
+      user.totalCycleDays,
+      user.periodLengthDays,
+      user.periodStartDateKey,
+    ],
   );
 
-  const livePhase = useMemo(
-    () =>
-      computeCyclePhase(
-        liveCycleDay,
-        user.totalCycleDays,
-        user.periodLengthDays ?? 5,
-      ),
-    [liveCycleDay, user.totalCycleDays, user.periodLengthDays],
-  );
+  const liveCycleDay = cycleSnapshot.cycleDay;
+  const livePhase = cycleSnapshot.phase;
 
   const recentSymptoms = useMemo(
     () => getRecentSymptoms(user.symptomLogs),
     [user.symptomLogs],
   );
 
-  const predictedNextPeriodDateKey = useMemo(() => {
-    if (!user.periodStartDateKey) return null;
-
-    const start = fromDateKey(user.periodStartDateKey);
-    if (!start) return null;
-
-    const nextStart = new Date(start);
-    nextStart.setDate(nextStart.getDate() + user.totalCycleDays);
-    return toDateKey(nextStart);
-  }, [user.periodStartDateKey, user.totalCycleDays]);
+  const predictedNextPeriodDateKey = cycleSnapshot.nextPeriodDateKey;
 
   return (
     <UserContext.Provider
