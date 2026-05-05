@@ -2,6 +2,7 @@ import { useUser } from "@/context/UserContext";
 import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import {
+    Alert,
     Animated,
     Dimensions,
     Image,
@@ -322,12 +323,14 @@ function BMIField({
 // ─── Main Screen ──────────────────────────────────────────────────────────
 export default function ProfileSetupPage() {
   const router = useRouter();
-  const { setUser } = useUser();
+  const { user, setUser } = useUser();
 
+  const [name, setName] = useState(user.name === "Friend" ? "" : user.name);
   const [selectedAvatar, setSelectedAvatar] = useState<number | null>(null);
   const [selectedAge, setSelectedAge] = useState<string | null>(null);
   const [bmi, setBmi] = useState({ height: "", weight: "" });
   const [activeBMIField, setActiveBMIField] = useState<ActiveBMIField>(null);
+  const [cycleLength, setCycleLength] = useState("31");
   const [periodLength, setPeriodLength] = useState("5");
   const [regularity, setRegularity] = useState<"Regular" | "Irregular" | null>(
     null,
@@ -336,25 +339,58 @@ export default function ProfileSetupPage() {
     "Light" | "Medium" | "Heavy" | null
   >(null);
 
+  const hasCoreDetails =
+    name.trim().length > 0 &&
+    selectedAvatar !== null &&
+    selectedAge !== null &&
+    bmi.height.trim().length > 0 &&
+    bmi.weight.trim().length > 0;
+  const hasAllRequiredDetails =
+    hasCoreDetails &&
+    cycleLength.trim().length > 0 &&
+    periodLength.trim().length > 0 &&
+    regularity !== null &&
+    flowIntensity !== null;
+  const canContinue = hasAllRequiredDetails;
+
   const handleBMIFieldPress = (field: ActiveBMIField) => {
     setActiveBMIField((prev) => (prev === field ? null : field));
   };
 
   const handleContinue = () => {
+    if (!hasAllRequiredDetails) {
+      Alert.alert(
+        "Complete your details",
+        "Please answer every question before continuing.",
+      );
+      return;
+    }
+
     setUser({
+      name: name.trim(),
       avatarIndex: selectedAvatar,
       ageGroup: selectedAge,
       bmiHeightCm: bmi.height ? parseInt(bmi.height) : null,
       bmiWeightKg: bmi.weight ? parseInt(bmi.weight) : null,
+      totalCycleDays: cycleLength ? parseInt(cycleLength) : 31,
       periodLengthDays: periodLength ? parseInt(periodLength) : null,
       cycleRegularity: regularity,
       flowIntensity,
+      profileComplete: true,
     });
     router.replace("/(tabs)");
   };
 
   const btnScale = useRef(new Animated.Value(1)).current;
   const handleBtnPress = () => {
+    if (!canContinue) {
+      Alert.alert(
+        "Complete your details",
+        "Please fill in your avatar, age group, BMI details, and cycle length first.",
+      );
+      return;
+    }
+
     Animated.sequence([
       Animated.timing(btnScale, {
         toValue: 0.96,
@@ -439,6 +475,30 @@ export default function ProfileSetupPage() {
             elevation: 4,
           }}
         >
+          <SectionLabel>Your Name</SectionLabel>
+          <View
+            style={{
+              borderBottomWidth: 2,
+              borderColor: "#EDAAB5",
+              paddingBottom: 8,
+              marginBottom: 18,
+            }}
+          >
+            <TextInput
+              value={name}
+              onChangeText={setName}
+              placeholder="Your name"
+              placeholderTextColor="#D9A0AC"
+              autoCapitalize="words"
+              style={{
+                color: "#C0162C",
+                fontSize: 22,
+                fontWeight: "700",
+                padding: 0,
+              }}
+            />
+          </View>
+
           <SectionLabel>Choose Your Avatar</SectionLabel>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
             {AVATARS.map((src, i) => (
@@ -512,6 +572,48 @@ export default function ProfileSetupPage() {
               onPress={() => handleBMIFieldPress("weight")}
               onChange={(v) => setBmi((p) => ({ ...p, weight: v }))}
             />
+          </View>
+        </View>
+
+        {/* ─────────── CYCLE LENGTH ─────────── */}
+        <View
+          style={{
+            backgroundColor: "#fff",
+            borderRadius: 24,
+            padding: 20,
+            marginBottom: 20,
+            shadowColor: "#C0162C",
+            shadowOffset: { width: 0, height: 6 },
+            shadowOpacity: 0.07,
+            shadowRadius: 20,
+            elevation: 4,
+          }}
+        >
+          <SectionLabel>Cycle Length</SectionLabel>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "baseline",
+              borderBottomWidth: 2,
+              borderColor: "#EDAAB5",
+              paddingBottom: 8,
+              gap: 8,
+            }}
+          >
+            <TextInput
+              value={cycleLength}
+              onChangeText={setCycleLength}
+              keyboardType="numeric"
+              style={{
+                color: "#C0162C",
+                fontSize: 36,
+                fontWeight: "800",
+                minWidth: 50,
+              }}
+            />
+            <Text style={{ color: "#B06070", fontSize: 15, fontWeight: "600" }}>
+              days on average
+            </Text>
           </View>
         </View>
 
@@ -645,17 +747,18 @@ export default function ProfileSetupPage() {
         <Animated.View style={{ transform: [{ scale: btnScale }] }}>
           <TouchableOpacity
             onPress={handleBtnPress}
+            disabled={!canContinue}
             activeOpacity={0.9}
             style={{
-              backgroundColor: "#C0162C",
+              backgroundColor: canContinue ? "#C0162C" : "#E4A8B2",
               borderRadius: 20,
               paddingVertical: 20,
               alignItems: "center",
               shadowColor: "#C0162C",
               shadowOffset: { width: 0, height: 10 },
-              shadowOpacity: 0.4,
+              shadowOpacity: canContinue ? 0.4 : 0.14,
               shadowRadius: 20,
-              elevation: 12,
+              elevation: canContinue ? 12 : 4,
               flexDirection: "row",
               justifyContent: "center",
               gap: 10,

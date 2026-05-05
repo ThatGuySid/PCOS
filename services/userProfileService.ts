@@ -2,18 +2,18 @@
 // Place this file at: services/userProfileService.ts
 
 import {
-  CyclePhase,
-  PeriodEntry,
-  SymptomLogEntry,
+    CyclePhase,
+    PeriodEntry,
+    SymptomLogEntry,
 } from "@/context/UserContext";
 import {
-  deleteDoc,
-  doc,
-  getDoc,
-  serverTimestamp,
-  setDoc,
-  Timestamp,
-  updateDoc,
+    deleteDoc,
+    doc,
+    getDoc,
+    serverTimestamp,
+    setDoc,
+    Timestamp,
+    updateDoc,
 } from "firebase/firestore";
 import { db } from "./firebaseConfig";
 
@@ -37,6 +37,7 @@ export type FirestoreUserProfile = {
   periodEntries: PeriodEntry[];
   symptoms: string[];
   symptomLogs: SymptomLogEntry[];
+  profileComplete: boolean;
   updatedAt?: Timestamp;
   createdAt?: Timestamp;
 };

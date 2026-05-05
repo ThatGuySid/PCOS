@@ -3,16 +3,16 @@ import { createUserProfile } from "@/services/userProfileService";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 function PixelHeart() {
@@ -82,7 +82,6 @@ function InputField({
 export default function Signup() {
   const router = useRouter();
 
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -91,7 +90,7 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
 
   const handleSignup = async () => {
-    if (!name || !email || !password || !confirmPassword) {
+    if (!email || !password || !confirmPassword) {
       Alert.alert("Missing fields", "Please fill in all fields.");
       return;
     }
@@ -101,7 +100,7 @@ export default function Signup() {
     }
 
     setLoading(true);
-    const result = await signUp(name.trim(), email.trim(), password);
+    const result = await signUp(email.trim(), password);
     setLoading(false);
 
     if (!result.success) {
@@ -113,7 +112,7 @@ export default function Signup() {
     // Profile-setup.tsx will fill in the rest.
     try {
       await createUserProfile(result.user.uid, {
-        name: name.trim(),
+        name: "",
         avatarIndex: null,
         ageGroup: null,
         bmiHeightCm: null,
@@ -132,6 +131,7 @@ export default function Signup() {
         periodEntries: [],
         symptoms: [],
         symptomLogs: [],
+        profileComplete: false,
       });
     } catch {
       // Non-fatal: the profile will be created lazily on next sign-in.
@@ -156,16 +156,6 @@ export default function Signup() {
           <Text style={styles.title}>herFlow</Text>
           <Text style={styles.subtitle}>Your personal cycle companion</Text>
         </View>
-
-        {/* Name */}
-        <InputField
-          label="Name"
-          placeholder="Your name"
-          value={name}
-          onChangeText={setName}
-          autoCapitalize="words"
-          returnKeyType="next"
-        />
 
         {/* Email */}
         <InputField

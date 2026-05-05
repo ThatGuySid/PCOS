@@ -53,6 +53,24 @@ const MENU_ITEMS = [
     route: "/ai-assistant",
     tag: "AI",
   },
+  {
+    icon: "💊",
+    iconType: "emoji" as const,
+    backgroundColor: "#E84D73",
+    title: "Medicine Tracker",
+    subtitle: "Keep doses, timings, and reminders in one place",
+    route: "/medicinetracker",
+    tag: "Care",
+  },
+  {
+    icon: "📁",
+    iconType: "emoji" as const,
+    backgroundColor: "#F97316",
+    title: "Health Report Vault",
+    subtitle: "Store scans, labs, and prescriptions securely",
+    route: "/healthreport",
+    tag: "Vault",
+  },
 ];
 
 export default function HealthScreen() {
@@ -177,6 +195,8 @@ export default function HealthScreen() {
                               : 30,
                         }}
                       />
+                    ) : item.iconType === "emoji" ? (
+                      <Text style={{ fontSize: 24 }}>{item.icon}</Text>
                     ) : (
                       <SvgUri uri={item.icon} width={39} height={39} />
                     )}

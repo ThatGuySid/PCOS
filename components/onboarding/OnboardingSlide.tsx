@@ -1,14 +1,15 @@
 import { useEffect, useRef } from "react";
 import {
-  Animated,
-  Dimensions,
-  ImageBackground,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Animated,
+    Dimensions,
+    ImageBackground,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SvgXml } from "react-native-svg";
+import SkipButton from "./SkipButton";
 
 const { width, height } = Dimensions.get("window");
 
@@ -295,20 +296,7 @@ export default function OnboardingSlide({
           </TouchableOpacity>
         </Animated.View>
 
-        {!isLast && onSkip && (
-          <TouchableOpacity onPress={onSkip} style={{ marginTop: 14 }}>
-            <Text
-              style={{
-                color: "#B79AA0",
-                fontSize: 12,
-                fontWeight: "500",
-                opacity: 0.9,
-              }}
-            >
-              Skip
-            </Text>
-          </TouchableOpacity>
-        )}
+        {!isLast && onSkip && <SkipButton onPress={onSkip} />}
       </Animated.View>
     </ImageBackground>
   );

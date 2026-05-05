@@ -72,6 +72,7 @@ type UserData = {
   periodEntries: PeriodEntry[];
   symptoms: string[];
   symptomLogs: SymptomLogEntry[];
+  profileComplete: boolean;
 };
 
 type UserContextType = {
@@ -137,6 +138,7 @@ const DEFAULT_USER: UserData = {
   ],
   symptoms: [],
   symptomLogs: [],
+  profileComplete: false,
 };
 
 const USER_STORAGE_KEY = "@herflow/user";
@@ -195,6 +197,21 @@ function fromFirestoreProfile(raw: Record<string, unknown>): Partial<UserData> {
   return { ...(raw as Partial<UserData>), selectedPeriodDate };
 }
 
+function isLegacyProfileComplete(profile: Partial<UserData>): boolean {
+  return (
+    typeof profile.name === "string" &&
+    profile.name.trim().length > 0 &&
+    profile.avatarIndex !== null &&
+    profile.ageGroup !== null &&
+    profile.bmiHeightCm !== null &&
+    profile.bmiWeightKg !== null &&
+    profile.totalCycleDays !== null &&
+    profile.periodLengthDays !== null &&
+    profile.cycleRegularity !== null &&
+    profile.flowIntensity !== null
+  );
+}
+
 // ── Context ───────────────────────────────────────────────────────────────────
 const UserContext = createContext<UserContextType | null>(null);
 
@@ -222,23 +239,21 @@ export function UserProvider({ children }: { children: ReactNode }) {
         try {
           const profile = await getUserProfile(fbUser.uid);
           if (profile) {
-            const profileHasData = Object.entries(profile).some(
-              ([key, value]) => {
-                if (key === "name") return false;
-                if (value == null) return false;
-                if (Array.isArray(value)) return value.length > 0;
-                return true;
-              },
+            const normalizedProfile = fromFirestoreProfile(
+              profile as Record<string, unknown>,
             );
+            const profileHasData =
+              Boolean(normalizedProfile.profileComplete) ||
+              isLegacyProfileComplete(normalizedProfile);
 
             setHasProfileData(profileHasData);
             setUserState((prev) => ({
               ...prev,
-              ...fromFirestoreProfile(profile as Record<string, unknown>),
+              ...normalizedProfile,
             }));
             const merged = {
               ...DEFAULT_USER,
-              ...fromFirestoreProfile(profile as Record<string, unknown>),
+              ...normalizedProfile,
             };
             await AsyncStorage.setItem(
               USER_STORAGE_KEY,
@@ -319,6 +334,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const setUser = (data: Partial<UserData>) => {
     setUserState((prev) => ({ ...prev, ...data }));
+    setHasProfileData(Boolean(data.profileComplete));
   };
 
   const signOutUser = async (): Promise<{
@@ -329,6 +345,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     if (result.success) {
       hydratedUidRef.current = null;
       setUserState(DEFAULT_USER);
+      setHasProfileData(false);
       await AsyncStorage.removeItem(USER_STORAGE_KEY).catch(() => {});
     }
     return result;
@@ -362,6 +379,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
     hydratedUidRef.current = null;
     setUserState(DEFAULT_USER);
+    setHasProfileData(false);
     await AsyncStorage.removeItem(USER_STORAGE_KEY).catch(() => {});
 
     return { success: true };

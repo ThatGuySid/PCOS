@@ -2,14 +2,13 @@
 // Place this file at: services/authService.ts
 
 import {
-  AuthError,
-  createUserWithEmailAndPassword,
-  deleteUser,
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  signOut,
-  updateProfile,
-  User,
+    AuthError,
+    createUserWithEmailAndPassword,
+    deleteUser,
+    onAuthStateChanged,
+    signInWithEmailAndPassword,
+    signOut,
+    User,
 } from "firebase/auth";
 import { auth } from "./firebaseConfig";
 
@@ -47,7 +46,6 @@ function friendlyError(err: AuthError): string {
 // ── Public API ────────────────────────────────────────────────────────────────
 
 export async function signUp(
-  name: string,
   email: string,
   password: string,
 ): Promise<AuthResult> {
@@ -57,7 +55,6 @@ export async function signUp(
       email,
       password,
     );
-    await updateProfile(credential.user, { displayName: name });
     return { success: true, user: credential.user };
   } catch (err) {
     return { success: false, error: friendlyError(err as AuthError) };
