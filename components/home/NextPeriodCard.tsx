@@ -1,10 +1,11 @@
+import type { CycleSnapshot } from "@/services/cycleService";
 import { fromDateKey } from "@/services/dateService";
 import { Text, View } from "react-native";
 
 type Props = {
-  predictedNextPeriodDateKey: string | null;
-  livePhase: string;
-  liveCycleDay: number;
+  cycleSnapshot: CycleSnapshot;
+  livePhase: string | null;
+  liveCycleDay: number | null;
   totalCycleDays: number;
 };
 
@@ -47,22 +48,34 @@ const PHASE_COLORS: Record<string, { bg: string; accent: string }> = {
 };
 
 export default function NextPeriodCard({
-  predictedNextPeriodDateKey,
+  cycleSnapshot,
   livePhase,
   liveCycleDay,
   totalCycleDays,
 }: Props) {
-  const colors = PHASE_COLORS[livePhase] ?? PHASE_COLORS.Menstrual;
+  const colors =
+    PHASE_COLORS[(livePhase || "Menstrual") as keyof typeof PHASE_COLORS];
+  const hasNextPeriodPrediction = Boolean(
+    cycleSnapshot.nextPeriodWindow?.point,
+  );
 
-  const daysUntil = predictedNextPeriodDateKey
-    ? getDaysUntil(predictedNextPeriodDateKey)
+  const daysUntilPoint = cycleSnapshot.nextPeriodWindow?.point
+    ? getDaysUntil(cycleSnapshot.nextPeriodWindow.point)
+    : null;
+
+  const daysUntilEarliest = cycleSnapshot.nextPeriodWindow?.earliest
+    ? getDaysUntil(cycleSnapshot.nextPeriodWindow.earliest)
+    : null;
+
+  const daysUntilLatest = cycleSnapshot.nextPeriodWindow?.latest
+    ? getDaysUntil(cycleSnapshot.nextPeriodWindow.latest)
     : null;
 
   // Progress through current cycle
-  const progressPct = Math.min(
-    100,
-    Math.round((liveCycleDay / totalCycleDays) * 100),
-  );
+  const progressPct =
+    totalCycleDays > 0
+      ? Math.min(100, Math.round(((liveCycleDay ?? 0) / totalCycleDays) * 100))
+      : 0;
 
   return (
     <View
@@ -95,22 +108,68 @@ export default function NextPeriodCard({
           >
             Next Period
           </Text>
-          {predictedNextPeriodDateKey ? (
-            <Text style={{ color: "#3A1A20", fontSize: 22, fontWeight: "800" }}>
-              {formatDateKey(predictedNextPeriodDateKey)}
-            </Text>
+          {hasNextPeriodPrediction ? (
+            <>
+              <Text
+                style={{ color: "#3A1A20", fontSize: 22, fontWeight: "800" }}
+              >
+                {cycleSnapshot.nextPeriodWindow?.point
+                  ? formatDateKey(cycleSnapshot.nextPeriodWindow.point)
+                  : "—"}
+              </Text>
+              {daysUntilPoint !== null && (
+                <Text style={{ color: "#8C5F66", fontSize: 12, marginTop: 2 }}>
+                  {daysUntilPoint > 0
+                    ? `in ${daysUntilPoint} day${daysUntilPoint === 1 ? "" : "s"}`
+                    : daysUntilPoint === 0
+                      ? "today"
+                      : `${Math.abs(daysUntilPoint)} day${Math.abs(daysUntilPoint) === 1 ? "" : "s"} ago`}
+                </Text>
+              )}
+              {daysUntilEarliest !== null && daysUntilLatest !== null && (
+                <Text
+                  style={{
+                    color: "#8C5F66",
+                    fontSize: 11,
+                    marginTop: 4,
+                    fontStyle: "italic",
+                  }}
+                >
+                  Range: {daysUntilEarliest}–{daysUntilLatest} days away
+                </Text>
+              )}
+              <View style={{ marginTop: 6, flexDirection: "row", gap: 8 }}>
+                <Text
+                  style={{
+                    color: colors.accent,
+                    fontSize: 10,
+                    fontWeight: "700",
+                    backgroundColor: "rgba(0,0,0,0.05)",
+                    paddingHorizontal: 8,
+                    paddingVertical: 3,
+                    borderRadius: 6,
+                  }}
+                >
+                  {cycleSnapshot.confidence}
+                </Text>
+              </View>
+              {cycleSnapshot.insight && (
+                <Text
+                  style={{
+                    color: "#8C5F66",
+                    fontSize: 11,
+                    marginTop: 6,
+                    lineHeight: 16,
+                  }}
+                >
+                  {cycleSnapshot.insight}
+                </Text>
+              )}
+            </>
           ) : (
             <Text style={{ color: "#8C5F66", fontSize: 14, lineHeight: 19 }}>
-              Add your first period entry to see a gentle prediction
-            </Text>
-          )}
-          {daysUntil !== null && (
-            <Text style={{ color: "#8C5F66", fontSize: 12, marginTop: 2 }}>
-              {daysUntil > 0
-                ? `in ${daysUntil} day${daysUntil === 1 ? "" : "s"}`
-                : daysUntil === 0
-                  ? "today"
-                  : `${Math.abs(daysUntil)} day${Math.abs(daysUntil) === 1 ? "" : "s"} ago`}
+              Add your first period entry to see a gentle prediction. The app
+              will stay useful either way.
             </Text>
           )}
         </View>
@@ -128,10 +187,10 @@ export default function NextPeriodCard({
           }}
         >
           <Text style={{ color: "#fff", fontSize: 18, fontWeight: "800" }}>
-            {liveCycleDay}
+            {liveCycleDay ?? "—"}
           </Text>
           <Text style={{ color: "rgba(255,255,255,0.8)", fontSize: 10 }}>
-            of {totalCycleDays}
+            of {totalCycleDays > 0 ? totalCycleDays : "—"}
           </Text>
         </View>
       </View>

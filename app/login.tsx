@@ -1,4 +1,4 @@
-import { logIn } from "@/services/authService";
+import { logIn, resetPassword } from "@/services/authService";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -178,9 +178,26 @@ export default function LoginScreen() {
 
           <TouchableOpacity
             style={styles.forgotButton}
-            onPress={() =>
-              Alert.alert("Coming soon", "Password reset is not set up yet.")
-            }
+            onPress={async () => {
+              if (!email.trim()) {
+                Alert.alert(
+                  "Enter your email",
+                  "Please enter your email address above first, then tap 'Forgot password?'",
+                );
+                return;
+              }
+              setLoading(true);
+              const result = await resetPassword(email.trim());
+              setLoading(false);
+              if (result.success) {
+                Alert.alert(
+                  "Email sent",
+                  "Check your inbox for a password reset link.",
+                );
+              } else {
+                Alert.alert("Error", result.error);
+              }
+            }}
           >
             <Text style={styles.forgotText}>Forgot password?</Text>
           </TouchableOpacity>

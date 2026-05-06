@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import "../global.css";
 
 function AuthGuard() {
-  const { firebaseUser, isAuthLoading, isProfileHydrated, hasProfileData } =
+  const { firebaseUser, isAuthLoading, isProfileHydrated, hasStartedJourney } =
     useUser();
   const segments = useSegments();
   const router = useRouter();
@@ -24,15 +24,15 @@ function AuthGuard() {
         return;
       }
 
-      // If signed in but no saved profile data exists yet, force setup.
-      if (!hasProfileData && !isProfileSetupRoute) {
+      // If signed in but journey has not started yet, force setup.
+      if (!hasStartedJourney && !isProfileSetupRoute) {
         router.replace("/profile-setup");
         return;
       }
 
-      // If profile data exists and user is on auth/onboarding/setup, send to app.
+      // If journey has started and user is on auth/onboarding/setup, send to app.
       if (
-        hasProfileData &&
+        hasStartedJourney &&
         (inAuthGroup || isOnboardingRoute || isProfileSetupRoute)
       ) {
         router.replace("/(tabs)");
@@ -47,7 +47,7 @@ function AuthGuard() {
     firebaseUser,
     isAuthLoading,
     isProfileHydrated,
-    hasProfileData,
+    hasStartedJourney,
     segments,
   ]);
 

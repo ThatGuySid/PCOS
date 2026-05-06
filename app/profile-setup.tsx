@@ -325,13 +325,13 @@ export default function ProfileSetupPage() {
   const router = useRouter();
   const { user, setUser } = useUser();
 
-  const [name, setName] = useState(user.name === "Friend" ? "" : user.name);
+  const [name, setName] = useState(user.name);
   const [selectedAvatar, setSelectedAvatar] = useState<number | null>(null);
   const [selectedAge, setSelectedAge] = useState<string | null>(null);
   const [bmi, setBmi] = useState({ height: "", weight: "" });
   const [activeBMIField, setActiveBMIField] = useState<ActiveBMIField>(null);
-  const [cycleLength, setCycleLength] = useState("31");
-  const [periodLength, setPeriodLength] = useState("5");
+  const [cycleLength, setCycleLength] = useState("");
+  const [periodLength, setPeriodLength] = useState("");
   const [regularity, setRegularity] = useState<"Regular" | "Irregular" | null>(
     null,
   );
@@ -366,14 +366,17 @@ export default function ProfileSetupPage() {
       return;
     }
 
+    const parsedCycleLength = parseInt(cycleLength);
+    const parsedPeriodLength = parseInt(periodLength);
+
     setUser({
       name: name.trim(),
       avatarIndex: selectedAvatar,
       ageGroup: selectedAge,
       bmiHeightCm: bmi.height ? parseInt(bmi.height) : null,
       bmiWeightKg: bmi.weight ? parseInt(bmi.weight) : null,
-      totalCycleDays: cycleLength ? parseInt(cycleLength) : 31,
-      periodLengthDays: periodLength ? parseInt(periodLength) : null,
+      totalCycleDays: parsedCycleLength,
+      periodLengthDays: parsedPeriodLength,
       cycleRegularity: regularity,
       flowIntensity,
       profileComplete: true,

@@ -1,8 +1,13 @@
 import ChatBubble from "@/components/health/ChatBubble";
 import ChatInput from "@/components/health/ChatInput";
 import QuickQuestions from "@/components/health/QuickQuestions";
+import { useUser } from "@/context/UserContext";
+import {
+    buildAIContext,
+    generateAssistantResponse,
+} from "@/services/aiservice";
 import { useRouter } from "expo-router";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
     Image,
     KeyboardAvoidingView,
@@ -19,34 +24,6 @@ type Message = {
   text: string;
   isUser: boolean;
   timestamp: string;
-};
-
-// ── Mocked AI responses ────────────────────────────────────────────────────────
-// Replace this function body with a real API call when ready
-const getMockedResponse = (userMessage: string): string => {
-  const msg = userMessage.toLowerCase();
-
-  if (msg.includes("symptom") || msg.includes("pcos symptom")) {
-    return "PCOS (Polycystic Ovary Syndrome) and PCOD (Polycystic Ovary Disease) commonly present with irregular or missed periods, excessive facial/body hair growth (hirsutism), acne, weight gain, and difficulty conceiving.";
-  }
-  if (
-    msg.includes("weight") ||
-    msg.includes("loose weight") ||
-    msg.includes("lose weight")
-  ) {
-    return "For PCOS-related weight management, focus on a low-glycemic diet, regular low-impact exercise like yoga or walking, stress reduction, and adequate sleep. Always consult your doctor before starting any new regimen.";
-  }
-  if (msg.includes("irregular period") || msg.includes("irregular")) {
-    return "Irregular periods with PCOS are common due to hormonal imbalances. Tracking your cycle, maintaining a healthy lifestyle, and speaking with your gynecologist about hormonal support can help regulate your cycle.";
-  }
-  if (msg.includes("diet") || msg.includes("food") || msg.includes("eat")) {
-    return "A PCOS-friendly diet includes whole grains, lean proteins, leafy greens, and healthy fats. Reduce processed sugars and refined carbs which can worsen insulin resistance common in PCOS.";
-  }
-  if (msg.includes("exercise") || msg.includes("workout")) {
-    return "Low to moderate intensity exercise works best for PCOS — yoga, walking, swimming, and strength training help regulate hormones and improve insulin sensitivity without overstraining your body.";
-  }
-
-  return "That's a great question! For personalized advice on PCOS/PCOD management, I recommend discussing this with your healthcare provider. Is there something specific about symptoms, diet, or lifestyle I can help clarify?";
 };
 
 const QUICK_QUESTIONS = [
@@ -66,17 +43,49 @@ export default function AIAssistantScreen() {
   const router = useRouter();
   const scrollRef = useRef<ScrollView>(null);
   const [input, setInput] = useState("");
+  const { livePhase, liveCycleDay, user, recentSymptoms, cycleSnapshot } =
+    useUser();
+
+  const aiContext = useMemo(
+    () =>
+      buildAIContext({
+        phase: livePhase,
+        cycleDay: liveCycleDay,
+        totalCycleDays: user.totalCycleDays,
+        periodLengthDays: user.periodLengthDays,
+        cycleRegularity: user.cycleRegularity,
+        flowIntensity: user.flowIntensity,
+        nextPeriodWindow: cycleSnapshot.nextPeriodWindow,
+        recentSymptoms,
+        symptomLogs: user.symptomLogs,
+        periodEntries: user.periodEntries,
+      }),
+    [
+      livePhase,
+      liveCycleDay,
+      user.totalCycleDays,
+      user.periodLengthDays,
+      user.cycleRegularity,
+      user.flowIntensity,
+      cycleSnapshot.nextPeriodWindow,
+      recentSymptoms,
+      user.symptomLogs,
+      user.periodEntries,
+    ],
+  );
 
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "0",
-      text: 'Hi, I\'m Your Health Assistant!\nYou can call me "buddy".\nHow may I help you?',
+      text: aiContext.phase
+        ? `I’m here with your ${aiContext.phase.toLowerCase()} phase context. Ask me about food, workouts, symptoms, or cycle timing.`
+        : "I don’t have enough cycle data yet to personalise answers. Log a period start and a few symptoms, and I’ll be able to guide you better.",
       isUser: false,
       timestamp: "",
     },
   ]);
 
-  const sendMessage = (text: string) => {
+  const sendMessage = async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed) return;
 
@@ -89,7 +98,7 @@ export default function AIAssistantScreen() {
 
     const aiMsg: Message = {
       id: (Date.now() + 1).toString(),
-      text: getMockedResponse(trimmed),
+      text: (await generateAssistantResponse(aiContext, trimmed)).response,
       isUser: false,
       timestamp: "",
     };
@@ -178,7 +187,9 @@ export default function AIAssistantScreen() {
         {/* Quick questions — shown below last AI message */}
         <QuickQuestions
           questions={QUICK_QUESTIONS}
-          onSelect={(q) => sendMessage(q)}
+          onSelect={(q) => {
+            void sendMessage(q);
+          }}
         />
       </ScrollView>
 
@@ -186,7 +197,9 @@ export default function AIAssistantScreen() {
       <ChatInput
         value={input}
         onChange={setInput}
-        onSend={() => sendMessage(input)}
+        onSend={() => {
+          void sendMessage(input);
+        }}
       />
     </KeyboardAvoidingView>
   );

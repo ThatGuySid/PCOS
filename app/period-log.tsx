@@ -66,6 +66,8 @@ function getCycleDayForDate(
   periodStartDateKey: string | null,
   totalCycleDays: number,
 ) {
+  const safeCycleLength =
+    !totalCycleDays || totalCycleDays < 1 ? 28 : totalCycleDays;
   if (!periodStartDateKey) return 1;
   const start = fromDateKey(periodStartDateKey);
   const target = fromDateKey(dateKey);
@@ -74,7 +76,7 @@ function getCycleDayForDate(
   const msInDay = 1000 * 60 * 60 * 24;
   const elapsed = Math.floor((target.getTime() - start.getTime()) / msInDay);
   const normalized =
-    ((elapsed % totalCycleDays) + totalCycleDays) % totalCycleDays;
+    ((elapsed % safeCycleLength) + safeCycleLength) % safeCycleLength;
   return normalized + 1;
 }
 
@@ -83,9 +85,13 @@ function getPhaseForCycleDay(
   totalCycleDays: number,
   periodLengthDays: number,
 ): CyclePhase {
-  const ovulationDay = Math.round(totalCycleDays * 0.5);
+  const safeCycleLength =
+    !totalCycleDays || totalCycleDays < 1 ? 28 : totalCycleDays;
+  const safePeriodLength =
+    !periodLengthDays || periodLengthDays < 1 ? 5 : periodLengthDays;
+  const ovulationDay = Math.round(safeCycleLength * 0.5);
 
-  if (cycleDay <= periodLengthDays) return "Menstrual";
+  if (cycleDay <= safePeriodLength) return "Menstrual";
   if (Math.abs(cycleDay - ovulationDay) <= 1) return "Ovulation";
   if (cycleDay < ovulationDay) return "Follicular";
   return "Luteal";
@@ -97,11 +103,14 @@ function analyzePatterns(
 ) {
   if (logs.length < 3) return [];
 
+  const safeCycleLength =
+    !totalCycleDays || totalCycleDays < 1 ? 28 : totalCycleDays;
+
   const insights: string[] = [];
   const headacheBeforePeriod = logs.filter(
     (log) =>
       log.symptoms.includes("Headache") &&
-      log.cycleDay >= Math.max(1, totalCycleDays - 2),
+      log.cycleDay >= Math.max(1, safeCycleLength - 2),
   ).length;
 
   if (headacheBeforePeriod >= 2) {

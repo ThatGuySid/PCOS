@@ -1,9 +1,11 @@
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
-import { useRouter } from "expo-router";
-import { useUser, CyclePhase } from "@/context/UserContext";
 import PhaseWorkoutBanner from "@/components/workout/PhaseWorkoutBanner";
-import WorkoutCard, { Workout } from "@/components/workout/WorkoutCard";
 import SymptomWorkoutNote from "@/components/workout/SymptomWorkoutNote";
+import WorkoutCard, { Workout } from "@/components/workout/WorkoutCard";
+import { CyclePhase, useUser } from "@/context/UserContext";
+import { buildAIContext, getWorkoutGuidance } from "@/services/aiservice";
+import { useRouter } from "expo-router";
+import { useMemo } from "react";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 
 const PHASE_WORKOUTS: Record<CyclePhase, Workout[]> = {
   Menstrual: [
@@ -191,7 +193,10 @@ const PHASE_WORKOUTS: Record<CyclePhase, Workout[]> = {
   ],
 };
 
-function getSymptomNote(recentSymptoms: string[], phase: CyclePhase): string | null {
+function getSymptomNote(
+  recentSymptoms: string[],
+  phase: CyclePhase,
+): string | null {
   const hasCramps = recentSymptoms.includes("Cramps");
   const hasFatigue = recentSymptoms.includes("Fatigue");
   const hasHeadache = recentSymptoms.includes("Headache");
@@ -208,60 +213,155 @@ function getSymptomNote(recentSymptoms: string[], phase: CyclePhase): string | n
   return null;
 }
 
-function filterWorkouts(workouts: Workout[], recentSymptoms: string[]): Workout[] {
+function filterWorkouts(
+  workouts: Workout[],
+  recentSymptoms: string[],
+): Workout[] {
   const shouldReduce =
     recentSymptoms.includes("Cramps") ||
     recentSymptoms.includes("Headache") ||
     recentSymptoms.includes("Fatigue");
-  return shouldReduce ? workouts.filter((w) => w.intensity !== "High") : workouts;
+  return shouldReduce
+    ? workouts.filter((w) => w.intensity !== "High")
+    : workouts;
 }
 
 export default function WorkoutScreen() {
   const router = useRouter();
-  const { livePhase, liveCycleDay, user, recentSymptoms } = useUser();
+  const { livePhase, liveCycleDay, user, recentSymptoms, cycleSnapshot } =
+    useUser();
 
-  const allWorkouts = PHASE_WORKOUTS[livePhase];
-  const filteredWorkouts = filterWorkouts(allWorkouts, recentSymptoms);
-  const symptomNote = getSymptomNote(recentSymptoms, livePhase);
+  const aiContext = useMemo(
+    () =>
+      buildAIContext({
+        phase: livePhase,
+        cycleDay: liveCycleDay,
+        totalCycleDays: user.totalCycleDays,
+        periodLengthDays: user.periodLengthDays,
+        cycleRegularity: user.cycleRegularity,
+        flowIntensity: user.flowIntensity,
+        nextPeriodWindow: cycleSnapshot.nextPeriodWindow,
+        recentSymptoms,
+        symptomLogs: user.symptomLogs,
+        periodEntries: user.periodEntries,
+      }),
+    [
+      livePhase,
+      liveCycleDay,
+      user.totalCycleDays,
+      user.periodLengthDays,
+      user.cycleRegularity,
+      user.flowIntensity,
+      cycleSnapshot.nextPeriodWindow,
+      recentSymptoms,
+      user.symptomLogs,
+      user.periodEntries,
+    ],
+  );
+
+  const guidance = getWorkoutGuidance(aiContext);
+  const hasData =
+    guidance.hasEnoughData && livePhase !== null && liveCycleDay !== null;
 
   return (
     <View style={{ flex: 1, backgroundColor: "#F7C5CC" }}>
       <ScrollView
-        contentContainerStyle={{ padding: 24, paddingTop: 56, paddingBottom: 40 }}
+        contentContainerStyle={{
+          padding: 24,
+          paddingTop: 56,
+          paddingBottom: 40,
+        }}
         showsVerticalScrollIndicator={false}
       >
         <TouchableOpacity
           onPress={() => router.back()}
-          style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 20 }}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 8,
+            marginBottom: 20,
+          }}
         >
           <Text style={{ color: "#C0162C", fontSize: 20 }}>←</Text>
-          <Text style={{ color: "#C0162C", fontSize: 17, fontWeight: "700" }}>Workout</Text>
+          <Text style={{ color: "#C0162C", fontSize: 17, fontWeight: "700" }}>
+            Workout
+          </Text>
         </TouchableOpacity>
 
-        <PhaseWorkoutBanner
-          phase={livePhase}
-          cycleDay={liveCycleDay}
-          totalCycleDays={user.totalCycleDays}
-        />
+        {hasData ? (
+          <PhaseWorkoutBanner
+            phase={livePhase}
+            cycleDay={liveCycleDay}
+            totalCycleDays={user.totalCycleDays}
+          />
+        ) : (
+          <View
+            style={{
+              backgroundColor: "#fff",
+              borderRadius: 20,
+              padding: 18,
+              marginBottom: 20,
+              borderWidth: 1,
+              borderColor: "#F2D0D5",
+            }}
+          >
+            <Text
+              style={{
+                color: "#3A1A20",
+                fontSize: 15,
+                fontWeight: "800",
+                marginBottom: 6,
+              }}
+            >
+              Balanced baseline workout guidance
+            </Text>
+            <Text style={{ color: "#8C5F66", fontSize: 13, lineHeight: 20 }}>
+              {guidance.summary}
+            </Text>
+          </View>
+        )}
 
-        <SymptomWorkoutNote note={symptomNote} />
+        <SymptomWorkoutNote note={guidance.symptomNote} />
 
-        <Text style={{ color: "#3A1A20", fontSize: 15, fontWeight: "700", marginBottom: 12 }}>
+        <Text
+          style={{
+            color: "#3A1A20",
+            fontSize: 15,
+            fontWeight: "700",
+            marginBottom: 12,
+          }}
+        >
           Today's Recommended Workouts
         </Text>
 
-        {filteredWorkouts.map((workout) => (
+        {guidance.workouts.map((workout) => (
           <WorkoutCard key={workout.id} workout={workout} />
         ))}
 
-        {filteredWorkouts.length === 0 && (
-          <View style={{ backgroundColor: "#fff", borderRadius: 16, padding: 20, alignItems: "center" }}>
+        {guidance.workouts.length === 0 && (
+          <View
+            style={{
+              backgroundColor: "#fff",
+              borderRadius: 16,
+              padding: 20,
+              alignItems: "center",
+            }}
+          >
             <Text style={{ fontSize: 32, marginBottom: 8 }}>🛌</Text>
-            <Text style={{ color: "#C0162C", fontSize: 15, fontWeight: "700", marginBottom: 4 }}>
+            <Text
+              style={{
+                color: "#C0162C",
+                fontSize: 15,
+                fontWeight: "700",
+                marginBottom: 4,
+              }}
+            >
               Rest Day Recommended
             </Text>
-            <Text style={{ color: "#8C5F66", fontSize: 13, textAlign: "center" }}>
-              Based on your symptoms, full rest or a short walk is the best medicine today.
+            <Text
+              style={{ color: "#8C5F66", fontSize: 13, textAlign: "center" }}
+            >
+              {guidance.summary}
             </Text>
           </View>
         )}

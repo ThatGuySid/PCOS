@@ -3,7 +3,10 @@ import {
     logOut,
     subscribeToAuthState,
 } from "@/services/authService";
-import { computeCycleSnapshot } from "@/services/cycleService";
+import {
+    computeCycleSnapshot,
+    type CycleSnapshot,
+} from "@/services/cycleService";
 import { getRecentSymptoms } from "@/services/symptomService";
 import {
     deleteUserProfile,
@@ -70,10 +73,11 @@ type UserContextType = {
   resetUser: () => Promise<{ success: boolean; error?: string }>;
   livePhase: CyclePhase | null;
   liveCycleDay: number | null;
-  predictedNextPeriodDateKey: string | null;
+  cycleSnapshot: CycleSnapshot;
   recentSymptoms: string[];
   isProfileHydrated: boolean;
   hasProfileData: boolean;
+  hasStartedJourney: boolean;
   /** The signed-in Firebase user, or null when logged out. */
   firebaseUser: User | null;
   isAuthLoading: boolean;
@@ -81,13 +85,13 @@ type UserContextType = {
 
 // ── Defaults ──────────────────────────────────────────────────────────────────
 const DEFAULT_USER: UserData = {
-  name: "Friend",
-  avatarIndex: 0,
+  name: "",
+  avatarIndex: null,
   ageGroup: null,
   bmiHeightCm: null,
   bmiWeightKg: null,
   cycleDay: 0,
-  totalCycleDays: 31,
+  totalCycleDays: 0,
   cyclePhase: "Menstrual",
   periodLengthDays: null,
   cycleRegularity: null,
@@ -171,6 +175,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isProfileHydrated, setIsProfileHydrated] = useState(false);
   const [hasProfileData, setHasProfileData] = useState(false);
+  const [hasStartedJourney, setHasStartedJourney] = useState(false);
 
   const hydratedUidRef = useRef<string | null>(null);
 
@@ -193,6 +198,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
             const profileHasData = Boolean(normalizedProfile.hasStartedJourney);
 
             setHasProfileData(profileHasData);
+            setHasStartedJourney(profileHasData);
             setUserState((prev) => ({
               ...prev,
               ...normalizedProfile,
@@ -217,6 +223,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         hydratedUidRef.current = null;
         setIsProfileHydrated(false);
         setHasProfileData(false);
+        setHasStartedJourney(false);
       }
     });
 
@@ -282,6 +289,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setUserState((prev) => ({ ...prev, ...data }));
     if (typeof data.hasStartedJourney === "boolean") {
       setHasProfileData(data.hasStartedJourney);
+      setHasStartedJourney(data.hasStartedJourney);
     }
   };
 
@@ -294,6 +302,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       hydratedUidRef.current = null;
       setUserState(DEFAULT_USER);
       setHasProfileData(false);
+      setHasStartedJourney(false);
       await AsyncStorage.removeItem(USER_STORAGE_KEY).catch(() => {});
     }
     return result;
@@ -328,6 +337,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     hydratedUidRef.current = null;
     setUserState(DEFAULT_USER);
     setHasProfileData(false);
+    setHasStartedJourney(false);
     await AsyncStorage.removeItem(USER_STORAGE_KEY).catch(() => {});
 
     return { success: true };
@@ -357,8 +367,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
     [user.symptomLogs],
   );
 
-  const predictedNextPeriodDateKey = cycleSnapshot.nextPeriodDateKey;
-
   return (
     <UserContext.Provider
       value={{
@@ -368,10 +376,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
         resetUser,
         livePhase,
         liveCycleDay,
-        predictedNextPeriodDateKey,
+        cycleSnapshot,
         recentSymptoms,
         isProfileHydrated,
         hasProfileData,
+        hasStartedJourney,
         firebaseUser,
         isAuthLoading,
       }}

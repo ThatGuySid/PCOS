@@ -1,4 +1,4 @@
-import { Image, ImageSourcePropType, View } from "react-native";
+import { Image, ImageSourcePropType, Text, View } from "react-native";
 
 type Props = {
   avatarIndex: number | null;
@@ -14,7 +14,7 @@ const AVATARS: ImageSourcePropType[] = [
 ];
 
 export default function AvatarDisplay({ avatarIndex }: Props) {
-  const avatarSource = AVATARS[avatarIndex ?? 0];
+  const avatarSource = avatarIndex !== null ? AVATARS[avatarIndex] : null;
 
   return (
     <View className="items-center mb-4" style={{ marginTop: -12 }}>
@@ -30,14 +30,30 @@ export default function AvatarDisplay({ avatarIndex }: Props) {
           borderColor: "#AED6F1",
         }}
       >
-        <Image
-          source={avatarSource}
-          resizeMode="cover"
-          style={{
-            width: "100%",
-            height: "100%",
-          }}
-        />
+        {avatarSource ? (
+          <Image
+            source={avatarSource}
+            resizeMode="cover"
+            style={{
+              width: "100%",
+              height: "100%",
+            }}
+          />
+        ) : (
+          <View
+            style={{
+              width: "100%",
+              height: "100%",
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: "#FDEDEF",
+            }}
+          >
+            <Text style={{ color: "#C0162C", fontSize: 28, fontWeight: "800" }}>
+              ?
+            </Text>
+          </View>
+        )}
       </View>
     </View>
   );

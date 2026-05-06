@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Animated, AppState, Text, View } from "react-native";
 
 type Props = {
-  name: string;
+  name?: string;
 };
 
 // ── Rotating subtitles ────────────────────────────────────────────────────────
@@ -117,7 +117,10 @@ export default function GreetingHeader({ name }: Props) {
           textAlign: "center",
         }}
       >
-        {getGreeting(now)}, {name}! 🌸
+        {name?.trim()
+          ? `${getGreeting(now)}, ${name.trim()}!`
+          : `${getGreeting(now)}!`}{" "}
+        🌸
       </Text>
 
       {/* Cycling subtitle */}

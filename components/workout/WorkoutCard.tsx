@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Image } from "react-native";
+import { Image, Text, TouchableOpacity, View } from "react-native";
 
 export type Workout = {
   id: string;

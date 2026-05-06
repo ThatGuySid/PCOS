@@ -1,16 +1,16 @@
 import { useUser } from "@/context/UserContext";
 import { useState } from "react";
 import {
-  Alert,
-  Image,
-  ImageBackground,
-  ImageSourcePropType,
-  Modal,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    Image,
+    ImageBackground,
+    ImageSourcePropType,
+    Modal,
+    ScrollView,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 const AVATARS: ImageSourcePropType[] = [
@@ -61,7 +61,9 @@ function EditProfileModal({
   const { user, setUser } = useUser();
 
   const [name, setName] = useState(user.name);
-  const [avatarIndex, setAvatarIndex] = useState(user.avatarIndex ?? 0);
+  const [avatarIndex, setAvatarIndex] = useState<number | null>(
+    user.avatarIndex,
+  );
   const [ageGroup, setAgeGroup] = useState(user.ageGroup ?? "");
   const [height, setHeight] = useState(
     user.bmiHeightCm ? String(user.bmiHeightCm) : "",
@@ -69,9 +71,11 @@ function EditProfileModal({
   const [weight, setWeight] = useState(
     user.bmiWeightKg ? String(user.bmiWeightKg) : "",
   );
-  const [cycleDays, setCycleDays] = useState(String(user.totalCycleDays ?? 28));
+  const [cycleDays, setCycleDays] = useState(
+    user.totalCycleDays > 0 ? String(user.totalCycleDays) : "",
+  );
   const [periodLen, setPeriodLen] = useState(
-    String(user.periodLengthDays ?? 5),
+    user.periodLengthDays ? String(user.periodLengthDays) : "",
   );
   const [flow, setFlow] = useState(user.flowIntensity ?? null);
   const [regularity, setRegularity] = useState(user.cycleRegularity ?? null);
@@ -87,18 +91,21 @@ function EditProfileModal({
       return;
     }
 
+    if (!cycleDays.trim() || Number.isNaN(parsedCycle)) {
+      Alert.alert("Cycle length required", "Please enter your cycle length.");
+      return;
+    }
+
     setUser({
       name: name.trim(),
       avatarIndex,
       ageGroup: ageGroup || null,
       bmiHeightCm: isNaN(parsedHeight) ? null : parsedHeight,
       bmiWeightKg: isNaN(parsedWeight) ? null : parsedWeight,
-      totalCycleDays: isNaN(parsedCycle)
-        ? 28
-        : Math.max(14, Math.min(45, parsedCycle)),
-      periodLengthDays: isNaN(parsedPeriod)
-        ? 5
-        : Math.max(1, Math.min(10, parsedPeriod)),
+      totalCycleDays: Math.max(14, Math.min(45, parsedCycle)),
+      periodLengthDays: periodLen.trim()
+        ? Math.max(1, Math.min(10, parsedPeriod))
+        : null,
       flowIntensity: flow,
       cycleRegularity: regularity,
     });
@@ -487,16 +494,25 @@ export default function ProfileScreen() {
               borderWidth: 3,
               borderColor: "rgba(255,255,255,0.6)",
               marginBottom: 14,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: "rgba(255,255,255,0.12)",
             }}
           >
-            <Image
-              source={AVATARS[user.avatarIndex ?? 0]}
-              resizeMode="cover"
-              style={{ width: "100%", height: "100%" }}
-            />
+            {user.avatarIndex !== null ? (
+              <Image
+                source={AVATARS[user.avatarIndex]}
+                resizeMode="cover"
+                style={{ width: "100%", height: "100%" }}
+              />
+            ) : (
+              <Text style={{ color: "#fff", fontSize: 30, fontWeight: "800" }}>
+                ?
+              </Text>
+            )}
           </View>
           <Text style={{ color: "#fff", fontSize: 22, fontWeight: "900" }}>
-            {user.name || "My Profile"}
+            {user.name || "Profile"}
           </Text>
           <Text
             style={{
@@ -518,7 +534,8 @@ export default function ProfileScreen() {
             }}
           >
             <Text style={{ color: "#fff", fontSize: 12, fontWeight: "700" }}>
-              {livePhase} Phase · Day {liveCycleDay}
+              {livePhase ? `${livePhase} Phase` : "Phase not tracked"} · Day{" "}
+              {liveCycleDay ?? "—"}
             </Text>
           </View>
         </View>
@@ -579,7 +596,10 @@ export default function ProfileScreen() {
               value: String(user.periodEntries.length),
             },
             { label: "Symptom\nlogs", value: String(user.symptomLogs.length) },
-            { label: "Cycle\nlength", value: `${user.totalCycleDays}d` },
+            {
+              label: "Cycle\nlength",
+              value: user.totalCycleDays > 0 ? `${user.totalCycleDays}d` : "—",
+            },
           ].map((stat) => (
             <View
               key={stat.label}

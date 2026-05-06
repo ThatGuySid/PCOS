@@ -6,6 +6,7 @@ import {
     createUserWithEmailAndPassword,
     deleteUser,
     onAuthStateChanged,
+    sendPasswordResetEmail,
     signInWithEmailAndPassword,
     signOut,
     User,
@@ -113,4 +114,15 @@ export function subscribeToAuthState(
 
 export function getCurrentUser(): User | null {
   return auth.currentUser;
+}
+
+export async function resetPassword(
+  email: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await sendPasswordResetEmail(auth, email);
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
 }

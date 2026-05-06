@@ -2,7 +2,7 @@ import ActionButtons from "@/components/home/ActionButtons";
 import GreetingHeader from "@/components/home/GreetingHeader";
 import NextPeriodCard from "@/components/home/NextPeriodCard";
 import { useUser } from "@/context/UserContext";
-import { fromDateKey, toDateKey } from "@/services/dateService";
+import { fromDateKey } from "@/services/dateService";
 import { ImageBackground, ScrollView, Text, View } from "react-native";
 
 const PHASE_COLORS: Record<string, { bg: string; accent: string }> = {
@@ -13,18 +13,18 @@ const PHASE_COLORS: Record<string, { bg: string; accent: string }> = {
 };
 
 export default function HomeScreen() {
-  const { user, livePhase, liveCycleDay } = useUser();
-  const predictedNextPeriodDateKey = user.periodStartDateKey
-    ? (() => {
-        const start = fromDateKey(user.periodStartDateKey as string);
-        if (!start) return null;
-        const nextStart = new Date(start);
-        nextStart.setDate(nextStart.getDate() + (user.totalCycleDays ?? 28));
-        return toDateKey(nextStart);
-      })()
-    : null;
+  const { user, livePhase, liveCycleDay, cycleSnapshot } = useUser();
   const phase = PHASE_COLORS[livePhase] ?? PHASE_COLORS.Menstrual;
-  const pct = Math.round((liveCycleDay / (user.totalCycleDays ?? 28)) * 100);
+  const hasCycleData =
+    cycleSnapshot.phase !== null &&
+    cycleSnapshot.cycleDay !== null &&
+    cycleSnapshot.effectiveCycleLength !== null;
+  const pct =
+    hasCycleData && cycleSnapshot.cycleDay && cycleSnapshot.effectiveCycleLength
+      ? Math.round(
+          (cycleSnapshot.cycleDay / cycleSnapshot.effectiveCycleLength) * 100,
+        )
+      : null;
 
   return (
     <ImageBackground
@@ -47,7 +47,7 @@ export default function HomeScreen() {
           <View
             style={{ paddingHorizontal: 24, paddingTop: 56, paddingBottom: 24 }}
           >
-            <GreetingHeader name={user.name || "Beautiful"} />
+            <GreetingHeader name={user.name} />
           </View>
 
           {/* ── Cycle card ── no negative margin so greeting is never cut off */}
@@ -92,7 +92,7 @@ export default function HomeScreen() {
                     marginTop: 4,
                   }}
                 >
-                  {livePhase}
+                  {cycleSnapshot.phase ?? "Not tracked yet"}
                 </Text>
               </View>
 
@@ -108,7 +108,9 @@ export default function HomeScreen() {
                 <Text
                   style={{ color: "#fff", fontSize: 12, fontWeight: "700" }}
                 >
-                  Day {liveCycleDay}
+                  {cycleSnapshot.cycleDay
+                    ? `Day ${cycleSnapshot.cycleDay}`
+                    : "No data"}
                 </Text>
               </View>
             </View>
@@ -126,7 +128,7 @@ export default function HomeScreen() {
                 <View
                   style={{
                     height: "100%",
-                    width: `${pct}%`,
+                    width: pct !== null ? `${pct}%` : "0%",
                     backgroundColor: "#C0162C",
                     borderRadius: 4,
                   }}
@@ -143,10 +145,12 @@ export default function HomeScreen() {
                 <Text
                   style={{ color: "#C0162C", fontSize: 11, fontWeight: "700" }}
                 >
-                  {pct}% through cycle
+                  {pct !== null ? `${pct}% through cycle` : "No cycle data yet"}
                 </Text>
                 <Text style={{ color: "#B06070", fontSize: 11 }}>
-                  Day {user.totalCycleDays ?? 28}
+                  {cycleSnapshot.effectiveCycleLength
+                    ? `Day ${cycleSnapshot.effectiveCycleLength}`
+                    : "—"}
                 </Text>
               </View>
             </View>
@@ -164,29 +168,19 @@ export default function HomeScreen() {
             {[
               {
                 label: "Cycle Length",
-                value: `${user.totalCycleDays ?? 28} days`,
+                value: cycleSnapshot.effectiveCycleLength
+                  ? `${cycleSnapshot.effectiveCycleLength} days`
+                  : "—",
                 emoji: "🔄",
               },
               {
                 label: "Next Period",
-                value: predictedNextPeriodDateKey
+                value: cycleSnapshot.nextPeriodWindow?.point
                   ? (() => {
-                      const d = fromDateKey(predictedNextPeriodDateKey);
+                      const d = fromDateKey(
+                        cycleSnapshot.nextPeriodWindow.point!,
+                      );
                       if (!d) return "—";
-                      const months = [
-                        "Jan",
-                        "Feb",
-                        "Mar",
-                        "Apr",
-                        "May",
-                        "Jun",
-                        "Jul",
-                        "Aug",
-                        "Sep",
-                        "Oct",
-                        "Nov",
-                        "Dec",
-                      ];
                       const days = Math.round(
                         (d.getTime() - new Date().setHours(0, 0, 0, 0)) /
                           86400000,
@@ -246,7 +240,7 @@ export default function HomeScreen() {
           {/* ── Next period prediction card ── */}
           <View style={{ marginHorizontal: 20 }}>
             <NextPeriodCard
-              predictedNextPeriodDateKey={predictedNextPeriodDateKey}
+              cycleSnapshot={cycleSnapshot}
               livePhase={livePhase}
               liveCycleDay={liveCycleDay}
               totalCycleDays={user.totalCycleDays}
