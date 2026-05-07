@@ -89,6 +89,8 @@ export default function AIAssistantScreen() {
     const trimmed = text.trim();
     if (!trimmed) return;
 
+    setInput("");
+
     const userMsg: Message = {
       id: Date.now().toString(),
       text: trimmed,
@@ -96,17 +98,25 @@ export default function AIAssistantScreen() {
       timestamp: getTimestamp(),
     };
 
-    const aiMsg: Message = {
-      id: (Date.now() + 1).toString(),
-      text: (await generateAssistantResponse(aiContext, trimmed)).response,
+    const loadingId = (Date.now() + 1).toString();
+    const loadingMsg: Message = {
+      id: loadingId,
+      text: "...",
       isUser: false,
       timestamp: "",
     };
 
-    setMessages((prev) => [...prev, userMsg, aiMsg]);
-    setInput("");
+    setMessages((prev) => [...prev, userMsg, loadingMsg]);
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
 
-    // Scroll to bottom after messages update
+    const result = await generateAssistantResponse(aiContext, trimmed);
+
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === loadingId ? { ...m, text: result.response } : m,
+      ),
+    );
+
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
   };
 

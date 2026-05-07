@@ -178,14 +178,31 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [hasStartedJourney, setHasStartedJourney] = useState(false);
 
   const hydratedUidRef = useRef<string | null>(null);
+  const wasLoggedOutRef = useRef(false);
 
   useEffect(() => {
     const unsub = subscribeToAuthState(async (fbUser) => {
       setFirebaseUser(fbUser);
       setIsAuthLoading(false);
 
-      if (fbUser && hydratedUidRef.current !== fbUser.uid) {
+      // User logged out
+      if (!fbUser) {
+        hydratedUidRef.current = null;
+        setIsProfileHydrated(false);
+        setHasProfileData(false);
+        setHasStartedJourney(false);
+        wasLoggedOutRef.current = true;
+        return;
+      }
+
+      // User logged in or came back after logout (same or different UID)
+      const isNewUser = hydratedUidRef.current !== fbUser.uid;
+      const isReloginAfterLogout =
+        wasLoggedOutRef.current && hydratedUidRef.current === fbUser.uid;
+
+      if (isNewUser || isReloginAfterLogout) {
         hydratedUidRef.current = fbUser.uid;
+        wasLoggedOutRef.current = false;
         setIsProfileHydrated(false);
         setHasProfileData(false);
 
@@ -211,19 +228,32 @@ export function UserProvider({ children }: { children: ReactNode }) {
               USER_STORAGE_KEY,
               JSON.stringify(toStoredUser(merged as UserData)),
             );
+          } else {
+            // Firestore empty but user has AsyncStorage backup — use it
+            const stored = await AsyncStorage.getItem(USER_STORAGE_KEY);
+            if (stored) {
+              const restored = fromStoredUser(stored);
+              if (restored) {
+                setUserState(restored);
+                setHasProfileData(restored.hasStartedJourney ?? false);
+                setHasStartedJourney(restored.hasStartedJourney ?? false);
+              }
+            }
           }
         } catch {
-          // Offline: AsyncStorage hydration (handled below) will cover this.
+          // Offline/error: try AsyncStorage fallback
+          const stored = await AsyncStorage.getItem(USER_STORAGE_KEY);
+          if (stored) {
+            const restored = fromStoredUser(stored);
+            if (restored) {
+              setUserState(restored);
+              setHasProfileData(restored.hasStartedJourney ?? false);
+              setHasStartedJourney(restored.hasStartedJourney ?? false);
+            }
+          }
         } finally {
           setIsProfileHydrated(true);
         }
-      }
-
-      if (!fbUser) {
-        hydratedUidRef.current = null;
-        setIsProfileHydrated(false);
-        setHasProfileData(false);
-        setHasStartedJourney(false);
       }
     });
 
@@ -347,15 +377,17 @@ export function UserProvider({ children }: { children: ReactNode }) {
     () =>
       computeCycleSnapshot({
         periodEntries: user.periodEntries,
-        fallbackCycleLength: user.totalCycleDays,
+        fallbackCycleLength: user.totalCycleDays || 28,
         periodLengthDays: user.periodLengthDays ?? 5,
-        lastPeriodStartKey: user.periodStartDateKey,
+        cycleRegularity: user.cycleRegularity,
+        symptomLogs: user.symptomLogs,
       }),
     [
       user.periodEntries,
       user.totalCycleDays,
       user.periodLengthDays,
-      user.periodStartDateKey,
+      user.cycleRegularity,
+      user.symptomLogs,
     ],
   );
 

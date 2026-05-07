@@ -1,4 +1,4 @@
-import { View, TextInput, TouchableOpacity, Text } from "react-native";
+import { Text, TextInput, TouchableOpacity, View } from "react-native";
 
 type Props = {
   value: string;
@@ -20,25 +20,10 @@ export default function ChatInput({ value, onChange, onSend }: Props) {
         borderTopColor: "#F2D0D5",
       }}
     >
-      {/* Mic button */}
-      <TouchableOpacity
-        style={{
-          width: 42,
-          height: 42,
-          borderRadius: 21,
-          backgroundColor: "#C0162C",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Text style={{ fontSize: 18 }}>🎙️</Text>
-      </TouchableOpacity>
-
-      {/* Text input */}
       <TextInput
         value={value}
         onChangeText={onChange}
-        placeholder="Type a message..."
+        placeholder="Ask me anything..."
         placeholderTextColor="#B08890"
         returnKeyType="send"
         onSubmitEditing={onSend}
@@ -50,12 +35,11 @@ export default function ChatInput({ value, onChange, onSend }: Props) {
           paddingHorizontal: 16,
           fontSize: 14,
           color: "#3A1A20",
-          borderWidth: 1,
-          borderColor: "#F2D0D5",
+          borderWidth: 1.5,
+          borderColor: "#EAB4BD",
         }}
       />
 
-      {/* Send button */}
       <TouchableOpacity
         onPress={onSend}
         style={{
