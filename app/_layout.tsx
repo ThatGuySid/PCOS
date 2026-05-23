@@ -19,13 +19,26 @@ function AuthGuard() {
       segments[0] === undefined;
     const isProfileSetupRoute = segments[0] === "profile-setup";
 
+    console.log("[AuthGuard] evaluate", {
+      segments,
+      firebaseUser: !!firebaseUser,
+      isAuthLoading,
+      isProfileHydrated,
+      hasStartedJourney,
+      isOnboardingRoute,
+      inAuthGroup,
+      isProfileSetupRoute,
+    });
+
     if (firebaseUser) {
       if (!isProfileHydrated) {
+        console.log("[AuthGuard] waiting for profile hydration");
         return;
       }
 
       // If signed in but journey has not started yet, force setup.
       if (!hasStartedJourney && !isProfileSetupRoute) {
+        console.log("[AuthGuard] redirect -> /profile-setup");
         router.replace("/profile-setup");
         return;
       }
@@ -35,12 +48,23 @@ function AuthGuard() {
         hasStartedJourney &&
         (inAuthGroup || isOnboardingRoute || isProfileSetupRoute)
       ) {
+        console.log("[AuthGuard] redirect -> /(tabs)");
         router.replace("/(tabs)");
         return;
       }
     }
 
+    // Logged out users who already started their journey should not be forced
+    // through onboarding again.
+    if (!firebaseUser && hasStartedJourney && isOnboardingRoute) {
+      console.log("[AuthGuard] skipping onboarding for returning user");
+      console.log("[AuthGuard] redirect -> /login");
+      router.replace("/login");
+      return;
+    }
+
     if (!firebaseUser && !isOnboardingRoute && !inAuthGroup) {
+      console.log("[AuthGuard] redirect -> /onboarding");
       router.replace("/onboarding");
     }
   }, [

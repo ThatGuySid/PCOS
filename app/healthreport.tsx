@@ -1,8 +1,9 @@
 import TrackerListItem from "@/components/health/TrackerListItem";
 import TrackerPill from "@/components/health/TrackerPill";
 import TrackerSection from "@/components/health/TrackerSection";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { storage } from "@/services/storage";
 import * as DocumentPicker from "expo-document-picker";
+import * as FileSystem from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import * as Sharing from "expo-sharing";
@@ -41,6 +42,7 @@ const REPORT_FILTERS: ("All" | ReportCategory)[] = [
 ];
 
 const VAULT_STORAGE_KEY = "pcos.health.vault.reports.v1";
+const VAULT_FILES_DIR = "health-vault-reports";
 
 function toSafeString(value: unknown, fallback: string) {
   if (typeof value === "string" && value.trim().length > 0) return value;
@@ -118,6 +120,44 @@ function isImage(report: VaultReport) {
   return report.mimeType.startsWith("image/");
 }
 
+function sanitizeFileName(fileName: string) {
+  return fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
+}
+
+async function persistReportFileLocally(file: {
+  uri: string;
+  name: string;
+  mimeType?: string | null;
+}) {
+  if (!FileSystem.documentDirectory) {
+    console.warn(
+      "[healthreport] documentDirectory unavailable, keeping source URI",
+    );
+    return {
+      uri: file.uri,
+      fileName: file.name,
+      mimeType: file.mimeType ?? "application/octet-stream",
+    };
+  }
+
+  const safeName = sanitizeFileName(file.name || `report-${Date.now()}`);
+  const directory = `${FileSystem.documentDirectory}${VAULT_FILES_DIR}`;
+  const destination = `${directory}/${Date.now()}-${safeName}`;
+
+  await FileSystem.makeDirectoryAsync(directory, { intermediates: true }).catch(
+    (error) => {
+      console.warn("[healthreport] makeDirectoryAsync failed", error);
+    },
+  );
+  await FileSystem.copyAsync({ from: file.uri, to: destination });
+
+  return {
+    uri: destination,
+    fileName: safeName,
+    mimeType: file.mimeType ?? "application/octet-stream",
+  };
+}
+
 export default function HealthReportVaultScreen() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<"All" | ReportCategory>(
@@ -132,8 +172,9 @@ export default function HealthReportVaultScreen() {
   useEffect(() => {
     const loadReports = async () => {
       try {
-        const savedReports = await AsyncStorage.getItem(VAULT_STORAGE_KEY);
+        const savedReports = await storage.getItem(VAULT_STORAGE_KEY);
         if (!savedReports) {
+          console.log("[healthreport] no saved reports found");
           setIsHydrated(true);
           return;
         }
@@ -146,9 +187,17 @@ export default function HealthReportVaultScreen() {
               .filter((entry) => Boolean(entry.uri))
           : [];
 
+        console.log(
+          `[healthreport] restored ${normalizedReports.length} reports from storage`,
+        );
         setReports(normalizedReports);
-      } catch {
+      } catch (error) {
+        console.warn(
+          "[healthreport] failed to hydrate reports from AsyncStorage",
+          error,
+        );
         Alert.alert("Vault", "Could not load saved reports.");
+        // Avoid wiping possibly valid stored data after a failed parse/load.
       } finally {
         setIsHydrated(true);
       }
@@ -167,11 +216,16 @@ export default function HealthReportVaultScreen() {
           .filter(isVaultReport)
           .filter((entry) => Boolean(entry.uri));
 
-        await AsyncStorage.setItem(
+        await storage.setItem(
           VAULT_STORAGE_KEY,
           JSON.stringify(normalizedReports),
         );
-      } catch {}
+        console.log(
+          `[healthreport] persisted ${normalizedReports.length} reports to AsyncStorage`,
+        );
+      } catch (error) {
+        console.warn("[healthreport] failed to persist reports", error);
+      }
     };
 
     void persistReports();
@@ -202,7 +256,7 @@ export default function HealthReportVaultScreen() {
       ]);
     });
 
-  const addReport = (
+  const addReport = async (
     file: {
       uri: string;
       name: string;
@@ -219,19 +273,23 @@ export default function HealthReportVaultScreen() {
       year: "numeric",
     });
 
+    const persistedFile = await persistReportFileLocally(file);
+
     const report: VaultReport = {
       id: `${today.getTime()}-${Math.random().toString(36).slice(2, 9)}`,
-      title: file.name.replace(/\.[^/.]+$/, "") || "Untitled Report",
+      title:
+        persistedFile.fileName.replace(/\.[^/.]+$/, "") || "Untitled Report",
       category,
       sourceName,
       reportDate,
-      fileName: file.name,
-      uri: file.uri,
-      mimeType: file.mimeType ?? "application/octet-stream",
+      fileName: persistedFile.fileName,
+      uri: persistedFile.uri,
+      mimeType: persistedFile.mimeType,
       sizeBytes: file.size ?? 0,
     };
 
     setReports((currentReports) => [report, ...currentReports]);
+    console.log("[healthreport] added report", report.id, report.fileName);
     Alert.alert("Uploaded", "Report added to your health vault.");
   };
 
@@ -248,7 +306,7 @@ export default function HealthReportVaultScreen() {
       if (result.canceled) return;
 
       const selectedFile = result.assets[0];
-      addReport(
+      await addReport(
         {
           uri: selectedFile.uri,
           name: selectedFile.name,
@@ -258,7 +316,8 @@ export default function HealthReportVaultScreen() {
         "File Upload",
         category,
       );
-    } catch {
+    } catch (error) {
+      console.warn("[healthreport] upload file failed", error);
       Alert.alert("Upload failed", "Could not upload the selected file.");
     }
   };
@@ -283,7 +342,7 @@ export default function HealthReportVaultScreen() {
       if (result.canceled) return;
 
       const image = result.assets[0];
-      addReport(
+      await addReport(
         {
           uri: image.uri,
           name: image.fileName ?? `scan-${Date.now()}.jpg`,
@@ -293,7 +352,8 @@ export default function HealthReportVaultScreen() {
         "Gallery Import",
         category,
       );
-    } catch {
+    } catch (error) {
+      console.warn("[healthreport] upload gallery failed", error);
       Alert.alert("Upload failed", "Could not import image from gallery.");
     }
   };
@@ -311,6 +371,7 @@ export default function HealthReportVaultScreen() {
             setReports((currentReports) =>
               currentReports.filter((report) => report.id !== reportId),
             );
+            console.log("[healthreport] deleted report", reportId);
             setSelectedReport(null);
           },
         },
@@ -340,7 +401,8 @@ export default function HealthReportVaultScreen() {
         "Exported",
         "Use the share sheet to save or share this report.",
       );
-    } catch {
+    } catch (error) {
+      console.warn("[healthreport] export report failed", error);
       Alert.alert("Export failed", "Could not export this report.");
     }
   };

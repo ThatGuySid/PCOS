@@ -1,11 +1,11 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { storage } from "@/services/storage";
 import { getApp, getApps, initializeApp } from "firebase/app";
-import {
-  getAuth,
-  getReactNativePersistence,
-  initializeAuth,
-} from "firebase/auth";
 import type { Auth } from "firebase/auth";
+import {
+    getAuth,
+    getReactNativePersistence,
+    initializeAuth,
+} from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -20,19 +20,31 @@ const firebaseConfig = {
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
 let auth: Auth;
+let authInitialized = false;
 try {
   // initializeAuth must only be called once. If it has already been
   // initialized (e.g. on HMR/reload), initializeAuth will throw —
   // fall back to getAuth in that case.
+  console.log(
+    "[firebaseConfig] attempting initializeAuth with AsyncStorage persistence",
+  );
   auth = initializeAuth(app, {
-    persistence: getReactNativePersistence(AsyncStorage),
+    persistence: getReactNativePersistence(storage),
   });
+  authInitialized = true;
+  console.log(
+    "[firebaseConfig] initializeAuth succeeded — AsyncStorage persistence set",
+  );
 } catch (e) {
   // Already initialized or other issue: use existing auth instance.
+  console.warn(
+    "[firebaseConfig] initializeAuth threw, falling back to getAuth:",
+    e,
+  );
   auth = getAuth(app);
 }
 
 const db = getFirestore(app);
 
-export { auth, db };
+export { auth, authInitialized, db };
 export default app;

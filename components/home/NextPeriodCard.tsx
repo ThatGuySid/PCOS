@@ -55,13 +55,17 @@ export default function NextPeriodCard({
 }: Props) {
   const colors =
     PHASE_COLORS[(livePhase || "Menstrual") as keyof typeof PHASE_COLORS];
+  const predictedKey =
+    cycleSnapshot.predictedNextPeriodDateKey ??
+    cycleSnapshot.nextPeriodWindow?.point ??
+    null;
   const hasNextPeriodPrediction = Boolean(
-    cycleSnapshot.nextPeriodWindow?.point,
+    predictedKey ||
+    cycleSnapshot.nextPeriodWindow?.earliest ||
+    cycleSnapshot.nextPeriodWindow?.latest,
   );
 
-  const daysUntilPoint = cycleSnapshot.nextPeriodWindow?.point
-    ? getDaysUntil(cycleSnapshot.nextPeriodWindow.point)
-    : null;
+  const daysUntilPoint = predictedKey ? getDaysUntil(predictedKey) : null;
 
   const daysUntilEarliest = cycleSnapshot.nextPeriodWindow?.earliest
     ? getDaysUntil(cycleSnapshot.nextPeriodWindow.earliest)
@@ -113,9 +117,24 @@ export default function NextPeriodCard({
               <Text
                 style={{ color: "#3A1A20", fontSize: 22, fontWeight: "800" }}
               >
-                {cycleSnapshot.nextPeriodWindow?.point
-                  ? formatDateKey(cycleSnapshot.nextPeriodWindow.point)
-                  : "—"}
+                {predictedKey
+                  ? formatDateKey(predictedKey)
+                  : cycleSnapshot.nextPeriodWindow?.earliest &&
+                      cycleSnapshot.nextPeriodWindow?.latest
+                    ? `${formatDateKey(
+                        cycleSnapshot.nextPeriodWindow.earliest,
+                      )} - ${formatDateKey(
+                        cycleSnapshot.nextPeriodWindow.latest,
+                      )}`
+                    : cycleSnapshot.nextPeriodWindow?.earliest
+                      ? `From ${formatDateKey(
+                          cycleSnapshot.nextPeriodWindow.earliest,
+                        )}`
+                      : cycleSnapshot.nextPeriodWindow?.latest
+                        ? `By ${formatDateKey(
+                            cycleSnapshot.nextPeriodWindow.latest,
+                          )}`
+                        : "—"}
               </Text>
               {daysUntilPoint !== null && (
                 <Text style={{ color: "#8C5F66", fontSize: 12, marginTop: 2 }}>

@@ -31,6 +31,7 @@ export type CycleSnapshot = {
   phase: CyclePhaseName | null;
   cycleDay: number | null;
   effectiveCycleLength: number | null;
+  predictedNextPeriodDateKey: string | null;
   nextPeriodWindow: PredictionWindow;
   ovulationDateKey: string | null;
   fertileWindow: FertileWindow;
@@ -439,6 +440,7 @@ export function computeCycleSnapshot(params: {
       phase: null,
       cycleDay: null,
       effectiveCycleLength: safeFallbackCycleLength,
+      predictedNextPeriodDateKey: null,
       nextPeriodWindow: { earliest: null, latest: null, point: null },
       ovulationDateKey: null,
       fertileWindow: { start: null, end: null },
@@ -519,6 +521,7 @@ export function computeCycleSnapshot(params: {
     phase,
     cycleDay,
     effectiveCycleLength,
+    predictedNextPeriodDateKey: nextPeriodWindow.point ?? rawNextKey ?? null,
     nextPeriodWindow,
     ovulationDateKey,
     fertileWindow,

@@ -4,9 +4,19 @@ type Props = {
   value: string;
   onChange: (text: string) => void;
   onSend: () => void;
+  disabled?: boolean;
+  loading?: boolean;
 };
 
-export default function ChatInput({ value, onChange, onSend }: Props) {
+export default function ChatInput({
+  value,
+  onChange,
+  onSend,
+  disabled = false,
+  loading = false,
+}: Props) {
+  const canSend = !disabled && value.trim().length > 0;
+
   return (
     <View
       style={{
@@ -25,8 +35,11 @@ export default function ChatInput({ value, onChange, onSend }: Props) {
         onChangeText={onChange}
         placeholder="Ask me anything..."
         placeholderTextColor="#B08890"
+        editable={!disabled}
         returnKeyType="send"
-        onSubmitEditing={onSend}
+        onSubmitEditing={() => {
+          if (canSend) onSend();
+        }}
         style={{
           flex: 1,
           backgroundColor: "#fff",
@@ -41,17 +54,20 @@ export default function ChatInput({ value, onChange, onSend }: Props) {
       />
 
       <TouchableOpacity
-        onPress={onSend}
+        onPress={() => {
+          if (canSend) onSend();
+        }}
+        disabled={!canSend}
         style={{
           width: 42,
           height: 42,
           borderRadius: 21,
-          backgroundColor: "#C0162C",
+          backgroundColor: canSend ? "#C0162C" : "#D7A9B1",
           alignItems: "center",
           justifyContent: "center",
         }}
       >
-        <Text style={{ fontSize: 18 }}>➤</Text>
+        <Text style={{ fontSize: 18 }}>{loading ? "…" : "➤"}</Text>
       </TouchableOpacity>
     </View>
   );

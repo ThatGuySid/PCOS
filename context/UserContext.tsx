@@ -7,13 +7,14 @@ import {
     computeCycleSnapshot,
     type CycleSnapshot,
 } from "@/services/cycleService";
+import { auth } from "@/services/firebaseConfig";
+import { storage } from "@/services/storage";
 import { getRecentSymptoms } from "@/services/symptomService";
 import {
     deleteUserProfile,
     getUserProfile,
     updateUserProfile,
 } from "@/services/userProfileService";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { User } from "firebase/auth";
 import {
     createContext,
@@ -29,6 +30,7 @@ import {
 export type CyclePhase = "Menstrual" | "Follicular" | "Ovulation" | "Luteal";
 
 export type PeriodEntry = {
+  entryId: string;
   startDateKey: string;
   endDateKey: string;
   dateKeys: string[];
@@ -134,13 +136,47 @@ function fromStoredUser(raw: string): UserData | null {
         ? parsedDate
         : DEFAULT_USER.selectedPeriodDate;
 
+    const normalizedPeriodEntries = Array.isArray(parsed.periodEntries)
+      ? parsed.periodEntries
+          .map((entry, index) => {
+            if (!entry || typeof entry !== "object") return null;
+            const candidate = entry as Partial<PeriodEntry>;
+            const startDateKey =
+              typeof candidate.startDateKey === "string"
+                ? candidate.startDateKey
+                : null;
+            const endDateKey =
+              typeof candidate.endDateKey === "string"
+                ? candidate.endDateKey
+                : null;
+            if (!startDateKey || !endDateKey) return null;
+
+            const dateKeys = Array.isArray(candidate.dateKeys)
+              ? candidate.dateKeys.filter(
+                  (value): value is string => typeof value === "string",
+                )
+              : [];
+            const entryId =
+              typeof candidate.entryId === "string" &&
+              candidate.entryId.trim().length > 0
+                ? candidate.entryId
+                : `${startDateKey}_${endDateKey}_${index}`;
+
+            return {
+              entryId,
+              startDateKey,
+              endDateKey,
+              dateKeys,
+            };
+          })
+          .filter((entry): entry is PeriodEntry => entry !== null)
+      : DEFAULT_USER.periodEntries;
+
     return {
       ...DEFAULT_USER,
       ...parsed,
       selectedPeriodDate,
-      periodEntries: Array.isArray(parsed.periodEntries)
-        ? parsed.periodEntries
-        : DEFAULT_USER.periodEntries,
+      periodEntries: normalizedPeriodEntries,
       periodDateKeys: Array.isArray(parsed.periodDateKeys)
         ? parsed.periodDateKeys
         : DEFAULT_USER.periodDateKeys,
@@ -161,7 +197,50 @@ function fromFirestoreProfile(raw: Record<string, unknown>): Partial<UserData> {
     typeof raw.selectedPeriodDate === "string"
       ? new Date(raw.selectedPeriodDate)
       : null;
-  return { ...(raw as Partial<UserData>), selectedPeriodDate };
+
+  const normalizedPeriodEntries = Array.isArray(raw.periodEntries)
+    ? raw.periodEntries
+        .map((entry, index) => {
+          if (!entry || typeof entry !== "object") return null;
+          const candidate = entry as Partial<PeriodEntry>;
+          const startDateKey =
+            typeof candidate.startDateKey === "string"
+              ? candidate.startDateKey
+              : null;
+          const endDateKey =
+            typeof candidate.endDateKey === "string"
+              ? candidate.endDateKey
+              : null;
+          if (!startDateKey || !endDateKey) return null;
+
+          const dateKeys = Array.isArray(candidate.dateKeys)
+            ? candidate.dateKeys.filter(
+                (value): value is string => typeof value === "string",
+              )
+            : [];
+          const entryId =
+            typeof candidate.entryId === "string" &&
+            candidate.entryId.trim().length > 0
+              ? candidate.entryId
+              : `${startDateKey}_${endDateKey}_${index}`;
+
+          return {
+            entryId,
+            startDateKey,
+            endDateKey,
+            dateKeys,
+          };
+        })
+        .filter((entry): entry is PeriodEntry => entry !== null)
+    : undefined;
+
+  return {
+    ...(raw as Partial<UserData>),
+    ...(normalizedPeriodEntries
+      ? { periodEntries: normalizedPeriodEntries }
+      : {}),
+    selectedPeriodDate,
+  };
 }
 
 // ── Context ───────────────────────────────────────────────────────────────────
@@ -181,17 +260,52 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const wasLoggedOutRef = useRef(false);
 
   useEffect(() => {
+    let isMounted = true;
+    const authStateReady = (
+      auth as unknown as {
+        authStateReady?: () => Promise<void>;
+      }
+    ).authStateReady;
+
+    if (authStateReady) {
+      authStateReady
+        .call(auth)
+        .then(() => {
+          if (!isMounted) return;
+          console.log("[UserContext] authStateReady resolved");
+          setIsAuthLoading(false);
+        })
+        .catch((error) => {
+          if (!isMounted) return;
+          console.warn("[UserContext] authStateReady failed", error);
+          setIsAuthLoading(false);
+        });
+    }
+
     const unsub = subscribeToAuthState(async (fbUser) => {
+      console.log(
+        "[UserContext] auth state changed",
+        fbUser ? "signed-in" : "signed-out",
+      );
       setFirebaseUser(fbUser);
-      setIsAuthLoading(false);
+
+      // Fallback for SDKs where authStateReady is unavailable.
+      if (!authStateReady) {
+        setIsAuthLoading(false);
+      }
 
       // User logged out
       if (!fbUser) {
         hydratedUidRef.current = null;
         setIsProfileHydrated(false);
-        setHasProfileData(false);
-        setHasStartedJourney(false);
+        // Keep the hydrated local journey flag for old users so onboarding
+        // is not shown repeatedly on restart.
+        setHasProfileData((prev) => prev);
+        setHasStartedJourney((prev) => prev);
         wasLoggedOutRef.current = true;
+        console.log(
+          "[UserContext] no firebase user, retaining local journey flag",
+        );
         return;
       }
 
@@ -216,6 +330,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
             setHasProfileData(profileHasData);
             setHasStartedJourney(profileHasData);
+            console.log(
+              "[UserContext] profile hydrated from Firestore",
+              profileHasData,
+            );
             setUserState((prev) => ({
               ...prev,
               ...normalizedProfile,
@@ -224,31 +342,44 @@ export function UserProvider({ children }: { children: ReactNode }) {
               ...DEFAULT_USER,
               ...normalizedProfile,
             };
-            await AsyncStorage.setItem(
+            await storage.setItem(
               USER_STORAGE_KEY,
               JSON.stringify(toStoredUser(merged as UserData)),
             );
+            console.log(
+              "[UserContext] cached Firestore profile in AsyncStorage",
+            );
           } else {
             // Firestore empty but user has AsyncStorage backup — use it
-            const stored = await AsyncStorage.getItem(USER_STORAGE_KEY);
+            const stored = await storage.getItem(USER_STORAGE_KEY);
             if (stored) {
               const restored = fromStoredUser(stored);
               if (restored) {
                 setUserState(restored);
                 setHasProfileData(restored.hasStartedJourney ?? false);
                 setHasStartedJourney(restored.hasStartedJourney ?? false);
+                console.log(
+                  "[UserContext] profile fallback hydrated from AsyncStorage",
+                );
               }
             }
           }
-        } catch {
+        } catch (error) {
+          console.warn(
+            "[UserContext] failed to hydrate profile from Firestore",
+            error,
+          );
           // Offline/error: try AsyncStorage fallback
-          const stored = await AsyncStorage.getItem(USER_STORAGE_KEY);
+          const stored = await storage.getItem(USER_STORAGE_KEY);
           if (stored) {
             const restored = fromStoredUser(stored);
             if (restored) {
               setUserState(restored);
               setHasProfileData(restored.hasStartedJourney ?? false);
               setHasStartedJourney(restored.hasStartedJourney ?? false);
+              console.log(
+                "[UserContext] profile recovery hydrated from AsyncStorage",
+              );
             }
           }
         } finally {
@@ -257,7 +388,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    return unsub;
+    return () => {
+      isMounted = false;
+      unsub();
+    };
   }, []);
 
   useEffect(() => {
@@ -265,7 +399,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
     async function hydrateFromStorage() {
       try {
-        const stored = await AsyncStorage.getItem(USER_STORAGE_KEY);
+        const stored = await storage.getItem(USER_STORAGE_KEY);
         if (!stored || cancelled) {
           setIsHydrated(true);
           return;
@@ -273,9 +407,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
         const restored = fromStoredUser(stored);
         if (restored && !cancelled) {
           setUserState(restored);
+          setHasProfileData(restored.hasStartedJourney ?? false);
+          setHasStartedJourney(restored.hasStartedJourney ?? false);
+          console.log("[UserContext] boot hydration loaded local user state");
         }
-      } catch {
-        // Keep defaults.
+      } catch (error) {
+        console.warn("[UserContext] failed local boot hydration", error);
       } finally {
         if (!cancelled) setIsHydrated(true);
       }
@@ -289,10 +426,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isHydrated) return;
-    AsyncStorage.setItem(
-      USER_STORAGE_KEY,
-      JSON.stringify(toStoredUser(user)),
-    ).catch(() => {});
+    storage
+      .setItem(USER_STORAGE_KEY, JSON.stringify(toStoredUser(user)))
+      .catch((error) => {
+        console.warn("[UserContext] failed to persist local user data", error);
+      });
   }, [isHydrated, user]);
 
   const firestoreSyncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -305,8 +443,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
     firestoreSyncTimer.current = setTimeout(() => {
       const stored = toStoredUser(user);
-      updateUserProfile(firebaseUser.uid, stored).catch(() => {
-        // Silently ignore write failures (e.g. offline).
+      updateUserProfile(firebaseUser.uid, stored).catch((error) => {
+        console.warn("[UserContext] firestore sync failed", error);
       });
     }, 1500);
 
@@ -321,6 +459,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setHasProfileData(data.hasStartedJourney);
       setHasStartedJourney(data.hasStartedJourney);
     }
+    if (data.hasStartedJourney === true && firebaseUser) {
+      const merged = { ...user, ...data } as UserData;
+      const stored = toStoredUser(merged);
+      updateUserProfile(firebaseUser.uid, stored).catch((error) => {
+        console.warn("[UserContext] immediate firestore save failed", error);
+      });
+    }
   };
 
   const signOutUser = async (): Promise<{
@@ -333,7 +478,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setUserState(DEFAULT_USER);
       setHasProfileData(false);
       setHasStartedJourney(false);
-      await AsyncStorage.removeItem(USER_STORAGE_KEY).catch(() => {});
+      await storage.removeItem(USER_STORAGE_KEY).catch(() => {});
     }
     return result;
   };
@@ -368,7 +513,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setUserState(DEFAULT_USER);
     setHasProfileData(false);
     setHasStartedJourney(false);
-    await AsyncStorage.removeItem(USER_STORAGE_KEY).catch(() => {});
+    await storage.removeItem(USER_STORAGE_KEY).catch(() => {});
 
     return { success: true };
   };

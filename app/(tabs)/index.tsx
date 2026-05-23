@@ -12,6 +12,74 @@ const PHASE_COLORS: Record<string, { bg: string; accent: string }> = {
   Luteal: { bg: "#5B1B8E", accent: "#A855F7" },
 };
 
+const MONTH_SHORT = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+
+function formatDateKeyShort(key: string): string {
+  const date = fromDateKey(key);
+  if (!date) return key;
+  return `${MONTH_SHORT[date.getMonth()]} ${date.getDate()}`;
+}
+
+function getDaysUntil(key: string): number | null {
+  const date = fromDateKey(key);
+  if (!date) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.round((date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function formatRelativeDays(days: number): string {
+  if (days > 0) return `In ${days}d`;
+  if (days === 0) return "Today";
+  return `${Math.abs(days)}d ago`;
+}
+
+function getNextPeriodStat(
+  window: {
+    point: string | null;
+    earliest: string | null;
+    latest: string | null;
+  },
+  predictedKey: string | null,
+): string {
+  if (predictedKey) {
+    const days = getDaysUntil(predictedKey);
+    return days === null ? "—" : formatRelativeDays(days);
+  }
+
+  const earliestDays = window.earliest ? getDaysUntil(window.earliest) : null;
+  const latestDays = window.latest ? getDaysUntil(window.latest) : null;
+
+  if (earliestDays !== null && latestDays !== null) {
+    if (earliestDays >= 0 && latestDays >= 0) {
+      return `In ${earliestDays}-${latestDays}d`;
+    }
+    if (earliestDays <= 0 && latestDays <= 0) {
+      return `${Math.abs(latestDays)}-${Math.abs(earliestDays)}d ago`;
+    }
+    return window.earliest && window.latest
+      ? `${formatDateKeyShort(window.earliest)}-${formatDateKeyShort(window.latest)}`
+      : "—";
+  }
+
+  if (window.earliest) return `From ${formatDateKeyShort(window.earliest)}`;
+  if (window.latest) return `By ${formatDateKeyShort(window.latest)}`;
+  return "—";
+}
+
 export default function HomeScreen() {
   const { user, livePhase, liveCycleDay, cycleSnapshot } = useUser();
   const phase = PHASE_COLORS[livePhase] ?? PHASE_COLORS.Menstrual;
@@ -175,22 +243,11 @@ export default function HomeScreen() {
               },
               {
                 label: "Next Period",
-                value: cycleSnapshot.nextPeriodWindow?.point
-                  ? (() => {
-                      const d = fromDateKey(
-                        cycleSnapshot.nextPeriodWindow.point!,
-                      );
-                      if (!d) return "—";
-                      const days = Math.round(
-                        (d.getTime() - new Date().setHours(0, 0, 0, 0)) /
-                          86400000,
-                      );
-                      return days > 0
-                        ? `In ${days}d`
-                        : days === 0
-                          ? "Today"
-                          : `${Math.abs(days)}d ago`;
-                    })()
+                value: cycleSnapshot.nextPeriodWindow
+                  ? getNextPeriodStat(
+                      cycleSnapshot.nextPeriodWindow,
+                      cycleSnapshot.predictedNextPeriodDateKey ?? null,
+                    )
                   : "—",
                 emoji: "📅",
               },

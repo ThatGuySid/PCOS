@@ -43,6 +43,7 @@ export default function AIAssistantScreen() {
   const router = useRouter();
   const scrollRef = useRef<ScrollView>(null);
   const [input, setInput] = useState("");
+  const [isAwaitingReply, setIsAwaitingReply] = useState(false);
   const { livePhase, liveCycleDay, user, recentSymptoms, cycleSnapshot } =
     useUser();
 
@@ -87,9 +88,11 @@ export default function AIAssistantScreen() {
 
   const sendMessage = async (text: string) => {
     const trimmed = text.trim();
-    if (!trimmed) return;
+    if (!trimmed || isAwaitingReply) return;
 
     setInput("");
+    setIsAwaitingReply(true);
+    console.log("[ai-assistant] request started");
 
     const userMsg: Message = {
       id: Date.now().toString(),
@@ -109,15 +112,31 @@ export default function AIAssistantScreen() {
     setMessages((prev) => [...prev, userMsg, loadingMsg]);
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
 
-    const result = await generateAssistantResponse(aiContext, trimmed);
+    try {
+      const result = await generateAssistantResponse(aiContext, trimmed);
 
-    setMessages((prev) =>
-      prev.map((m) =>
-        m.id === loadingId ? { ...m, text: result.response } : m,
-      ),
-    );
-
-    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === loadingId ? { ...m, text: result.response } : m,
+        ),
+      );
+      console.log("[ai-assistant] request completed");
+    } catch (error) {
+      console.warn("[ai-assistant] request failed", error);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === loadingId
+            ? {
+                ...m,
+                text: "I hit a temporary issue. Please try again in a moment.",
+              }
+            : m,
+        ),
+      );
+    } finally {
+      setIsAwaitingReply(false);
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+    }
   };
 
   return (
@@ -198,6 +217,7 @@ export default function AIAssistantScreen() {
         <QuickQuestions
           questions={QUICK_QUESTIONS}
           onSelect={(q) => {
+            if (isAwaitingReply) return;
             void sendMessage(q);
           }}
         />
@@ -207,6 +227,8 @@ export default function AIAssistantScreen() {
       <ChatInput
         value={input}
         onChange={setInput}
+        disabled={isAwaitingReply}
+        loading={isAwaitingReply}
         onSend={() => {
           void sendMessage(input);
         }}

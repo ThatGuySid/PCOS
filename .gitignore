@@ -68,3 +68,6 @@ temp/
 *.apk
 *.aab
 *.ipa
+
+# Local changes file (not to be committed)
+app/changes.txt

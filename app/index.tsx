@@ -4,8 +4,15 @@ import { Redirect } from "expo-router";
 import { useState } from "react";
 
 export default function Index() {
-  const { firebaseUser } = useUser();
+  const { firebaseUser, isAuthLoading, hasStartedJourney } = useUser();
   const [splashDone, setSplashDone] = useState(false);
+
+  console.log("[index] render", {
+    splashDone,
+    isAuthLoading,
+    firebaseUser: !!firebaseUser,
+    hasStartedJourney,
+  });
 
   const handleSplashFinish = () => {
     setSplashDone(true);
@@ -15,5 +22,19 @@ export default function Index() {
     return <SplashScreen onFinish={handleSplashFinish} />;
   }
 
-  return <Redirect href={firebaseUser ? "/(tabs)" : "/onboarding"} />;
+  if (isAuthLoading) {
+    console.log("[index] waiting for auth loading");
+    return <SplashScreen onFinish={handleSplashFinish} />;
+  }
+
+  if (firebaseUser) {
+    console.log("[index] redirect -> /(tabs)");
+    return <Redirect href="/(tabs)" />;
+  }
+
+  console.log(
+    "[index] redirect",
+    hasStartedJourney ? "-> /login" : "-> /onboarding",
+  );
+  return <Redirect href={hasStartedJourney ? "/login" : "/onboarding"} />;
 }

@@ -15,6 +15,7 @@ import {
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
+    Alert,
     ScrollView,
     Text,
     TextInput,
@@ -194,6 +195,17 @@ function sortLogsByDateDesc<T extends { dateKey: string }>(logs: T[]) {
   return [...logs].sort((a, b) => b.dateKey.localeCompare(a.dateKey));
 }
 
+function getPeriodEntryId(entry: {
+  entryId?: string;
+  startDateKey: string;
+  endDateKey: string;
+}) {
+  if (typeof entry.entryId === "string" && entry.entryId.trim().length > 0) {
+    return entry.entryId;
+  }
+  return `${entry.startDateKey}_${entry.endDateKey}`;
+}
+
 export default function PeriodLogScreen() {
   const router = useRouter();
   const { user, setUser } = useUser();
@@ -223,6 +235,10 @@ export default function PeriodLogScreen() {
   const sortedSymptomLogs = useMemo(
     () => sortLogsByDateDesc(user.symptomLogs),
     [user.symptomLogs],
+  );
+  const sortedPeriodEntries = useMemo(
+    () => sortPeriodEntriesByStartDate(user.periodEntries),
+    [user.periodEntries],
   );
   const patternInsights = useMemo(
     () => analyzePatterns(sortedSymptomLogs, user.totalCycleDays),
@@ -305,6 +321,7 @@ export default function PeriodLogScreen() {
 
     const rangeKeys = buildDateRangeKeys(user.periodStartDateKey, endKey);
     const newEntry = {
+      entryId: `${user.periodStartDateKey}_${endKey}_${Date.now()}`,
       startDateKey: user.periodStartDateKey,
       endDateKey: endKey,
       dateKeys: rangeKeys,
@@ -338,15 +355,19 @@ export default function PeriodLogScreen() {
   };
 
   const handleDeleteLastEntry = () => {
-    if (!user.periodEntries.length) {
+    if (!sortedPeriodEntries.length) {
       setPeriodMessage(
         "Nothing to delete yet. Add your first period entry anytime.",
       );
       return;
     }
 
-    const sortedEntries = sortPeriodEntriesByStartDate(user.periodEntries);
-    const nextEntries = sortedEntries.slice(0, -1);
+    const latestEntry = sortedPeriodEntries[sortedPeriodEntries.length - 1];
+    if (!latestEntry) return;
+    const latestEntryId = getPeriodEntryId(latestEntry);
+    const nextEntries = sortedPeriodEntries.filter(
+      (entry) => getPeriodEntryId(entry) !== latestEntryId,
+    );
     const latest = getLatestPeriodEntry(nextEntries);
 
     setUser({
@@ -357,6 +378,38 @@ export default function PeriodLogScreen() {
       periodLengthDays: latest?.dateKeys.length ?? null,
     });
     setPeriodMessage("Last period entry deleted.");
+  };
+
+  const handleDeletePeriodEntry = (entryId: string) => {
+    const target = sortedPeriodEntries.find(
+      (entry) => getPeriodEntryId(entry) === entryId,
+    );
+    if (!target) return;
+
+    Alert.alert("Delete period entry", "This specific entry will be removed.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () => {
+          const nextEntries = sortedPeriodEntries.filter(
+            (entry) => getPeriodEntryId(entry) !== entryId,
+          );
+          const latest = getLatestPeriodEntry(nextEntries);
+          setUser({
+            periodEntries: nextEntries,
+            periodDateKeys: flattenUniqueDateKeys(nextEntries),
+            periodStartDateKey: latest?.startDateKey ?? null,
+            periodEndDateKey: latest?.endDateKey ?? null,
+            periodLengthDays: latest?.dateKeys.length ?? null,
+          });
+          console.log("[period-log] deleted period entry", entryId);
+          setPeriodMessage(
+            `Deleted entry ${formatDateLabel(target.startDateKey)} to ${formatDateLabel(target.endDateKey)}.`,
+          );
+        },
+      },
+    ]);
   };
 
   const handleMarkOvulation = () => {
@@ -854,6 +907,72 @@ export default function PeriodLogScreen() {
           We'll keep this away for now and add it later.
           Reminder UI and scheduling are intentionally disabled for Expo Go.
         */}
+
+        <View
+          style={{
+            marginTop: 14,
+            backgroundColor: "#fff",
+            borderRadius: 18,
+            padding: 14,
+          }}
+        >
+          <Text
+            style={{
+              color: "#C0162C",
+              fontSize: 15,
+              fontWeight: "800",
+              marginBottom: 10,
+            }}
+          >
+            Period Entries
+          </Text>
+
+          {sortedPeriodEntries.length === 0 ? (
+            <Text style={{ color: "#8C5F66", fontSize: 12 }}>
+              No period entries yet.
+            </Text>
+          ) : (
+            sortedPeriodEntries
+              .slice()
+              .reverse()
+              .map((entry) => {
+                const entryId = getPeriodEntryId(entry);
+                return (
+                  <View
+                    key={entryId}
+                    style={{
+                      paddingVertical: 8,
+                      borderBottomWidth: 1,
+                      borderBottomColor: "#F8E6E9",
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: 8,
+                    }}
+                  >
+                    <Text style={{ color: "#3A1A20", fontSize: 13, flex: 1 }}>
+                      {formatDateLabel(entry.startDateKey)} to{" "}
+                      {formatDateLabel(entry.endDateKey)}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => handleDeletePeriodEntry(entryId)}
+                      activeOpacity={0.8}
+                      style={{
+                        paddingVertical: 6,
+                        paddingHorizontal: 8,
+                        borderRadius: 10,
+                        borderWidth: 1,
+                        borderColor: "#F2D0D5",
+                        backgroundColor: "#FFF5F6",
+                      }}
+                    >
+                      <Text style={{ fontSize: 12 }}>🗑</Text>
+                    </TouchableOpacity>
+                  </View>
+                );
+              })
+          )}
+        </View>
 
         <View
           style={{

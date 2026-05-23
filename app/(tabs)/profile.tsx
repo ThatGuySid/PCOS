@@ -1,12 +1,14 @@
 import { useUser } from "@/context/UserContext";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
     Alert,
     Image,
     ImageBackground,
     ImageSourcePropType,
     Modal,
+  Platform,
     ScrollView,
+  StatusBar,
     Text,
     TextInput,
     TouchableOpacity,
@@ -80,6 +82,30 @@ function EditProfileModal({
   const [flow, setFlow] = useState(user.flowIntensity ?? null);
   const [regularity, setRegularity] = useState(user.cycleRegularity ?? null);
 
+  const resetFormFromUser = () => {
+    setName(user.name);
+    setAvatarIndex(user.avatarIndex);
+    setAgeGroup(user.ageGroup ?? "");
+    setHeight(user.bmiHeightCm ? String(user.bmiHeightCm) : "");
+    setWeight(user.bmiWeightKg ? String(user.bmiWeightKg) : "");
+    setCycleDays(user.totalCycleDays > 0 ? String(user.totalCycleDays) : "");
+    setPeriodLen(user.periodLengthDays ? String(user.periodLengthDays) : "");
+    setFlow(user.flowIntensity ?? null);
+    setRegularity(user.cycleRegularity ?? null);
+  };
+
+  useEffect(() => {
+    if (!visible) return;
+    resetFormFromUser();
+    console.log("[profile] edit modal opened with latest user state");
+  }, [visible, user]);
+
+  const handleCancel = () => {
+    resetFormFromUser();
+    console.log("[profile] edit cancelled");
+    onClose();
+  };
+
   const handleSave = () => {
     const parsedCycle = parseInt(cycleDays);
     const parsedPeriod = parseInt(periodLen);
@@ -109,6 +135,7 @@ function EditProfileModal({
       flowIntensity: flow,
       cycleRegularity: regularity,
     });
+    console.log("[profile] profile changes saved");
     onClose();
   };
 
@@ -122,18 +149,21 @@ function EditProfileModal({
         {/* Modal header */}
         <View
           style={{
+            paddingTop:
+              Platform.OS === "android"
+                ? (StatusBar.currentHeight ?? 0) + 12
+                : 20,
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "space-between",
             paddingHorizontal: 24,
-            paddingTop: 20,
             paddingBottom: 16,
             borderBottomWidth: 1,
             borderColor: "#F5E0E3",
             backgroundColor: "#fff",
           }}
         >
-          <TouchableOpacity onPress={onClose}>
+          <TouchableOpacity onPress={handleCancel}>
             <Text style={{ color: "#9A6070", fontSize: 15 }}>Cancel</Text>
           </TouchableOpacity>
           <Text style={{ color: "#3A0A12", fontSize: 17, fontWeight: "800" }}>
