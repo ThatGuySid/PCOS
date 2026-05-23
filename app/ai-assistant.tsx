@@ -1,6 +1,5 @@
 import ChatBubble from "@/components/health/ChatBubble";
 import ChatInput from "@/components/health/ChatInput";
-import QuickQuestions from "@/components/health/QuickQuestions";
 import { useUser } from "@/context/UserContext";
 import {
     buildAIContext,
@@ -25,13 +24,6 @@ type Message = {
   isUser: boolean;
   timestamp: string;
 };
-
-const QUICK_QUESTIONS = [
-  "How to lose weight with PCOS?",
-  "Irregular periods",
-  "PCOS diet tips",
-  "Best exercises for PCOS",
-];
 
 const getTimestamp = () => {
   const now = new Date();
@@ -213,14 +205,7 @@ export default function AIAssistantScreen() {
           />
         ))}
 
-        {/* Quick questions — shown below last AI message */}
-        <QuickQuestions
-          questions={QUICK_QUESTIONS}
-          onSelect={(q) => {
-            if (isAwaitingReply) return;
-            void sendMessage(q);
-          }}
-        />
+        {/* Quick questions removed */}
       </ScrollView>
 
       {/* Input row */}
