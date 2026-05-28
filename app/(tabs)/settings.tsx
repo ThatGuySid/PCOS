@@ -1,5 +1,11 @@
 import DangerZone from "@/components/settings/DangerZone";
+import {
+    APP_VERSION,
+    LANGUAGE_STORAGE_KEY,
+    getLanguageLabel,
+} from "@/constants/settings";
 import { useUser } from "@/context/UserContext";
+import { useAppStrings } from "@/hooks/useAppStrings";
 import { getMedicineTracker } from "@/services/medicineService";
 import {
     cancelAllNotifications,
@@ -8,7 +14,10 @@ import {
     scheduleCuteNotifications,
     scheduleMedicineNotifications,
 } from "@/services/notificationService";
+import { storage } from "@/services/storage";
+import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
+import { useCallback, useMemo, useState } from "react";
 import {
     Alert,
     Platform,
@@ -87,43 +96,83 @@ function SettingRow({
   );
 }
 
-const SECTIONS = [
+type SettingAction =
+  | "edit-profile"
+  | "privacy"
+  | "export-data"
+  | "language"
+  | "about";
+
+type SettingItem = {
+  icon: string;
+  label: string;
+  sub?: string;
+  hasToggle?: boolean;
+  action?: SettingAction;
+};
+
+const buildSections = (
+  languageLabel: string,
+  strings: ReturnType<typeof useAppStrings>["strings"],
+) => [
   {
-    title: "Notifications",
+    title: strings.settingsSectionNotifications,
     items: [
       {
         icon: "🔔",
-        label: "Period Reminders",
-        sub: "Get notified before your period",
+        label: strings.settingsItemPeriodRemindersTitle,
+        sub: strings.settingsItemPeriodRemindersSub,
         hasToggle: true,
       },
       {
         icon: "💊",
-        label: "Medicine Alerts",
-        sub: "Daily medication reminders",
+        label: strings.settingsItemMedicineAlertsTitle,
+        sub: strings.settingsItemMedicineAlertsSub,
         hasToggle: true,
       },
       {
         icon: "🥚",
-        label: "Ovulation Alerts",
-        sub: "Track your fertile window",
+        label: strings.settingsItemOvulationAlertsTitle,
+        sub: strings.settingsItemOvulationAlertsSub,
         hasToggle: true,
       },
     ],
   },
   {
-    title: "Account",
+    title: strings.settingsSectionAccount,
     items: [
-      { icon: "👤", label: "Edit Profile" },
-      { icon: "🔒", label: "Privacy & Security" },
-      { icon: "📤", label: "Export Health Data" },
+      {
+        icon: "👤",
+        label: strings.settingsItemEditProfileTitle,
+        action: "edit-profile",
+      },
+      {
+        icon: "🔒",
+        label: strings.settingsItemPrivacyTitle,
+        action: "privacy",
+      },
+      {
+        icon: "📤",
+        label: strings.settingsItemExportTitle,
+        action: "export-data",
+      },
     ],
   },
   {
-    title: "App",
+    title: strings.settingsSectionApp,
     items: [
-      { icon: "🌐", label: "Language", sub: "English" },
-      { icon: "ℹ️", label: "About HerFlow", sub: "v1.0.0" },
+      {
+        icon: "🌐",
+        label: strings.settingsItemLanguageTitle,
+        sub: languageLabel,
+        action: "language",
+      },
+      {
+        icon: "ℹ️",
+        label: strings.settingsItemAboutTitle,
+        sub: `v${APP_VERSION}`,
+        action: "about",
+      },
     ],
   },
 ];
@@ -132,6 +181,44 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { resetUser, signOutUser, user, setUser, cycleSnapshot, firebaseUser } =
     useUser();
+  const { strings, refreshLanguage } = useAppStrings();
+  const [languageLabel, setLanguageLabel] = useState("English");
+  const sections = useMemo(
+    () => buildSections(languageLabel, strings),
+    [languageLabel, strings],
+  );
+
+  const handleAction = (action?: SettingAction) => {
+    if (!action) return;
+    if (action === "edit-profile") {
+      router.push("/(tabs)/profile");
+    } else if (action === "privacy") {
+      router.push("/privacy");
+    } else if (action === "export-data") {
+      router.push("/export-data");
+    } else if (action === "language") {
+      router.push("/language");
+    } else if (action === "about") {
+      router.push("/about");
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+      const loadLanguage = async () => {
+        await refreshLanguage();
+        const saved = await storage.getItem(LANGUAGE_STORAGE_KEY);
+        if (isActive) {
+          setLanguageLabel(getLanguageLabel(saved));
+        }
+      };
+      void loadLanguage();
+      return () => {
+        isActive = false;
+      };
+    }, []),
+  );
 
   // Full reset — deletes the account and returns to the login screen
   const handleResetAllData = async () => {
@@ -222,12 +309,12 @@ export default function SettingsScreen() {
             herFlow
           </Text>
           <Text style={{ color: "#3A0A12", fontSize: 28, fontWeight: "900" }}>
-            Settings
+            {strings.settingsTitle}
           </Text>
         </View>
 
         {/* Setting sections */}
-        {SECTIONS.map((section) => (
+        {sections.map((section) => (
           <View
             key={section.title}
             style={{
@@ -256,18 +343,16 @@ export default function SettingsScreen() {
             >
               {section.title}
             </Text>
-            {section.items.map((item) => (
+            {section.items.map((item: SettingItem) => (
               <SettingRow
-                key={item.label}
+                key={item.action ?? item.label}
                 {...item}
                 value={item.hasToggle ? user.notificationsEnabled : undefined}
                 onValueChange={
                   item.hasToggle ? handleNotificationsToggle : undefined
                 }
                 onPress={
-                  item.label === "Edit Profile"
-                    ? () => router.push("/(tabs)/profile")
-                    : undefined
+                  item.hasToggle ? undefined : () => handleAction(item.action)
                 }
               />
             ))}
@@ -295,7 +380,7 @@ export default function SettingsScreen() {
                 letterSpacing: 0.5,
               }}
             >
-              Sign Out
+              {strings.settingsSignOut}
             </Text>
           </TouchableOpacity>
         </View>
