@@ -55,25 +55,20 @@ export default function NextPeriodCard({
 }: Props) {
   const colors =
     PHASE_COLORS[(livePhase || "Menstrual") as keyof typeof PHASE_COLORS];
-  const predictedKey =
-    cycleSnapshot.predictedNextPeriodDateKey ??
-    cycleSnapshot.nextPeriodWindow?.point ??
-    null;
-  const hasNextPeriodPrediction = Boolean(
-    predictedKey ||
-    cycleSnapshot.nextPeriodWindow?.earliest ||
-    cycleSnapshot.nextPeriodWindow?.latest,
-  );
+  const { earliest, latest, point, displayLabel } =
+    cycleSnapshot.nextPeriodWindow ?? {
+      earliest: null,
+      latest: null,
+      point: null,
+      displayLabel: null,
+    };
+  const hasNextPeriodPrediction = Boolean(point || earliest || latest);
 
-  const daysUntilPoint = predictedKey ? getDaysUntil(predictedKey) : null;
+  const daysUntilPoint = point ? getDaysUntil(point) : null;
 
-  const daysUntilEarliest = cycleSnapshot.nextPeriodWindow?.earliest
-    ? getDaysUntil(cycleSnapshot.nextPeriodWindow.earliest)
-    : null;
+  const daysUntilEarliest = earliest ? getDaysUntil(earliest) : null;
 
-  const daysUntilLatest = cycleSnapshot.nextPeriodWindow?.latest
-    ? getDaysUntil(cycleSnapshot.nextPeriodWindow.latest)
-    : null;
+  const daysUntilLatest = latest ? getDaysUntil(latest) : null;
 
   // Progress through current cycle
   const progressPct =
@@ -117,24 +112,17 @@ export default function NextPeriodCard({
               <Text
                 style={{ color: "#3A1A20", fontSize: 22, fontWeight: "800" }}
               >
-                {predictedKey
-                  ? formatDateKey(predictedKey)
-                  : cycleSnapshot.nextPeriodWindow?.earliest &&
-                      cycleSnapshot.nextPeriodWindow?.latest
-                    ? `${formatDateKey(
-                        cycleSnapshot.nextPeriodWindow.earliest,
-                      )} - ${formatDateKey(
-                        cycleSnapshot.nextPeriodWindow.latest,
-                      )}`
-                    : cycleSnapshot.nextPeriodWindow?.earliest
-                      ? `From ${formatDateKey(
-                          cycleSnapshot.nextPeriodWindow.earliest,
-                        )}`
-                      : cycleSnapshot.nextPeriodWindow?.latest
-                        ? `By ${formatDateKey(
-                            cycleSnapshot.nextPeriodWindow.latest,
-                          )}`
-                        : "—"}
+                {displayLabel
+                  ? displayLabel
+                  : point
+                    ? formatDateKey(point)
+                    : earliest && latest
+                      ? `${formatDateKey(earliest)} - ${formatDateKey(latest)}`
+                      : earliest
+                        ? `From ${formatDateKey(earliest)}`
+                        : latest
+                          ? `By ${formatDateKey(latest)}`
+                          : "—"}
               </Text>
               {daysUntilPoint !== null && (
                 <Text style={{ color: "#8C5F66", fontSize: 12, marginTop: 2 }}>

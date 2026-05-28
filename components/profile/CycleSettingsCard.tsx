@@ -4,10 +4,10 @@ import EditableRow from "./EditableRow";
 type Props = {
   totalCycleDays: number;
   periodLengthDays: number | null;
-  cycleRegularity: "Regular" | "Irregular" | null;
+  cycleRegularity: "Regular" | "Variable" | "Irregular" | null;
   onChangeCycleDays: (days: number) => void;
   onChangePeriodLength: (days: number) => void;
-  onChangeRegularity: (val: "Regular" | "Irregular") => void;
+  onChangeRegularity: (val: "Regular" | "Variable" | "Irregular") => void;
 };
 
 export default function CycleSettingsCard({
@@ -82,7 +82,7 @@ export default function CycleSettingsCard({
           CYCLE REGULARITY
         </Text>
         <View style={{ flexDirection: "row", gap: 10 }}>
-          {(["Regular", "Irregular"] as const).map((opt) => (
+          {(["Regular", "Variable", "Irregular"] as const).map((opt) => (
             <TouchableOpacity
               key={opt}
               onPress={() => onChangeRegularity(opt)}

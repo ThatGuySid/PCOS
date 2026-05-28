@@ -78,7 +78,7 @@ export async function signUp(
     const credential = await withAuthTimeout(
       createUserWithEmailAndPassword(auth, email, password),
     );
-    if ((credential as AuthTimeout).timedOut) {
+    if ((credential as AuthTimeout | undefined)?.timedOut) {
       return {
         success: false,
         error: "Network timeout. Please try again.",
@@ -102,7 +102,7 @@ export async function logIn(
     const credential = await withAuthTimeout(
       signInWithEmailAndPassword(auth, email, password),
     );
-    if ((credential as AuthTimeout).timedOut) {
+    if ((credential as AuthTimeout | undefined)?.timedOut) {
       return {
         success: false,
         error: "Network timeout. Please try again.",
@@ -180,7 +180,7 @@ export async function resetPassword(
   try {
     authDebug("resetPassword start", { email: email.trim().toLowerCase() });
     const result = await withAuthTimeout(sendPasswordResetEmail(auth, email));
-    if ((result as AuthTimeout).timedOut) {
+    if ((result as AuthTimeout | undefined)?.timedOut) {
       return {
         success: false,
         error: "Network timeout. Please try again.",

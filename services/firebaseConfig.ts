@@ -6,7 +6,7 @@ import {
     getReactNativePersistence,
     initializeAuth,
 } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
@@ -44,7 +44,10 @@ try {
   auth = getAuth(app);
 }
 
-const db = getFirestore(app);
+const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+});
+console.log("[firebaseConfig] Firestore long-polling enabled");
 
 export { auth, authInitialized, db };
 export default app;

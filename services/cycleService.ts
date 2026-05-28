@@ -20,6 +20,7 @@ export type PredictionWindow = {
   earliest: string | null; // ISO date key
   latest: string | null; // ISO date key
   point: string | null; // single best estimate (null if too uncertain)
+  displayLabel: string | null;
 };
 
 export type FertileWindow = {
@@ -41,6 +42,8 @@ export type CycleSnapshot = {
   confidenceScore: number; // 0.0 – 1.0
   insight: string | null; // human-readable explanation
   trendDirection: "shortening" | "lengthening" | "stable" | "unknown";
+  reclassifiedRegularity: "Regular" | "Variable" | "Irregular" | null;
+  reclassificationReason: string | null;
 };
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
@@ -61,6 +64,26 @@ function normalizeCycleLength(value: number | null | undefined) {
 function normalizePeriodLength(value: number | null | undefined) {
   if (!value || !Number.isFinite(value) || value < 1) return 5;
   return Math.round(value);
+}
+
+function formatDateKeyShort(key: string): string {
+  const date = fromDateKey(key);
+  if (!date) return key;
+  const MONTH_SHORT = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+  return `${MONTH_SHORT[date.getMonth()]} ${date.getDate()}`;
 }
 
 function mean(values: number[]): number {
@@ -159,7 +182,7 @@ function trendAdjustment(
 export function computeConfidenceScore(params: {
   gaps: number[];
   lastPeriodStartKey: string | null;
-  cycleRegularity: "Regular" | "Irregular" | null;
+  cycleRegularity: "Regular" | "Variable" | "Irregular" | null;
 }): number {
   const { gaps, lastPeriodStartKey, cycleRegularity } = params;
 
@@ -167,7 +190,7 @@ export function computeConfidenceScore(params: {
 
   // Component 1: data volume (0–0.45)
   // Saturates around 6 cycles
-  const volumeScore = Math.min(0.45, gaps.length * 0.08);
+  const volumeScore = Math.min(0.45, (gaps.length / 6) * 0.45);
 
   // Component 2: consistency (0–0.40)
   // Lower std deviation = higher score
@@ -181,12 +204,14 @@ export function computeConfidenceScore(params: {
     const todayKey = toDateKey(new Date());
     const daysSince = getDateKeyDifferenceInDays(lastPeriodStartKey, todayKey);
     if (daysSince > 90) recencyScore = 0.0;
-    else if (daysSince > 60) recencyScore = 0.05;
-    else if (daysSince > 45) recencyScore = 0.1;
   }
 
-  // Penalty for self-reported irregularity
-  const regularityPenalty = cycleRegularity === "Irregular" ? 0.1 : 0;
+  const regularityPenalty =
+    cycleRegularity === "Irregular"
+      ? 0.1
+      : cycleRegularity === "Variable"
+        ? 0.05
+        : 0;
 
   const raw = volumeScore + consistencyScore + recencyScore - regularityPenalty;
   return Math.max(0.05, Math.min(1.0, raw));
@@ -206,38 +231,43 @@ function buildPredictionWindow(
   pointEstimateKey: string,
   confidenceScore: number,
   gaps: number[],
-  trend: "shortening" | "lengthening" | "stable" | "unknown",
 ): PredictionWindow {
   const sd = stdDev(gaps);
   const level = confidenceLevel(confidenceScore);
 
-  // Window half-width in days
+  // Window half-width in days (directly from std dev)
   let halfWidth: number;
 
-  if (level === "very_high") {
-    halfWidth = sd < 1.5 ? 0 : 1; // Single day or ±1
-  } else if (level === "high") {
-    halfWidth = Math.max(1, Math.ceil(sd * 0.75));
-  } else if (level === "medium") {
-    halfWidth = Math.max(2, Math.ceil(sd));
+  if (gaps.length < 2) {
+    halfWidth = 7;
+  } else if (sd < 1.5) {
+    halfWidth = 0;
+  } else if (sd < 3) {
+    halfWidth = Math.ceil(sd);
+  } else if (sd < 5) {
+    halfWidth = Math.ceil(sd * 1.2);
   } else {
-    // Low confidence — wide window
-    halfWidth = gaps.length === 0 ? 7 : Math.max(4, Math.ceil(sd * 1.5));
+    halfWidth = Math.ceil(sd * 1.5);
   }
-
-  // Unknown/shifting trend → widen slightly
-  if (trend === "shortening" || trend === "lengthening") halfWidth += 1;
 
   const earliest = addDays(pointEstimateKey, -halfWidth);
   const latest = addDays(pointEstimateKey, halfWidth);
 
-  // Only show a single-day point estimate if high enough confidence
-  const point =
-    level === "very_high" || (level === "high" && halfWidth <= 1)
-      ? pointEstimateKey
-      : null;
+  // Only show a single-day point estimate when stability is extremely high
+  const point = halfWidth === 0 ? pointEstimateKey : null;
 
-  return { earliest, latest, point };
+  let displayLabel: string | null = null;
+  if (level === "very_high" && halfWidth === 0 && point) {
+    displayLabel = `Likely ${formatDateKeyShort(point)}`;
+  } else if (level === "high" && halfWidth <= 2 && earliest && latest) {
+    displayLabel = `Expected around ${formatDateKeyShort(earliest)} – ${formatDateKeyShort(latest)}`;
+  } else if (level === "medium" && earliest && latest) {
+    displayLabel = `Expected ${formatDateKeyShort(earliest)} – ${formatDateKeyShort(latest)}`;
+  } else if (level === "low" && earliest && latest) {
+    displayLabel = `Estimated ${formatDateKeyShort(earliest)} – ${formatDateKeyShort(latest)}`;
+  }
+
+  return { earliest, latest, point, displayLabel };
 }
 
 // ── Step 7: Symptom-based adjustment ─────────────────────────────────────────
@@ -281,7 +311,7 @@ function buildInsight(params: {
   trend: "shortening" | "lengthening" | "stable" | "unknown";
   sd: number;
   symptomAdjustment: number;
-  cycleRegularity: "Regular" | "Irregular" | null;
+  cycleRegularity: "Regular" | "Variable" | "Irregular" | null;
 }): string | null {
   const {
     gaps,
@@ -333,6 +363,10 @@ function buildInsight(params: {
     return "You marked your cycles as irregular. Estimates will naturally be broader until patterns emerge.";
   }
 
+  if (cycleRegularity === "Variable") {
+    return "Your cycles show some variation. Predictions will refine as more data comes in.";
+  }
+
   return "Prediction is based on your logged cycle history.";
 }
 
@@ -376,7 +410,14 @@ export function computeEffectiveCycleLength(
   fallbackCycleLength: number,
 ): number {
   const safeFallbackCycleLength = normalizeCycleLength(fallbackCycleLength);
-  return safeFallbackCycleLength;
+  const gaps = extractGaps(periodEntries);
+
+  if (gaps.length === 0) return safeFallbackCycleLength;
+  if (gaps.length === 1) {
+    return normalizeCycleLength(gaps[0] * 0.7 + safeFallbackCycleLength * 0.3);
+  }
+
+  return normalizeCycleLength(weightedAverageCycleLength(gaps));
 }
 
 export function computeOvulationDateKey(
@@ -410,7 +451,7 @@ export function computeCycleSnapshot(params: {
   periodEntries: Array<{ startDateKey: string }>;
   fallbackCycleLength: number;
   periodLengthDays: number;
-  cycleRegularity?: "Regular" | "Irregular" | null;
+  cycleRegularity?: "Regular" | "Variable" | "Irregular" | null;
   symptomLogs?: Array<{
     dateKey: string;
     symptoms: string[];
@@ -441,7 +482,12 @@ export function computeCycleSnapshot(params: {
       cycleDay: null,
       effectiveCycleLength: safeFallbackCycleLength,
       predictedNextPeriodDateKey: null,
-      nextPeriodWindow: { earliest: null, latest: null, point: null },
+      nextPeriodWindow: {
+        earliest: null,
+        latest: null,
+        point: null,
+        displayLabel: "Log your first period to see predictions",
+      },
       ovulationDateKey: null,
       fertileWindow: { start: null, end: null },
       ovulationDay: null,
@@ -450,6 +496,8 @@ export function computeCycleSnapshot(params: {
       confidenceScore: 0,
       insight: "Log your first period to start tracking your cycle.",
       trendDirection: "unknown",
+      reclassifiedRegularity: null,
+      reclassificationReason: null,
     };
   }
 
@@ -460,6 +508,32 @@ export function computeCycleSnapshot(params: {
     periodEntries,
     safeFallbackCycleLength,
   );
+
+  const sd = stdDev(gaps);
+  let reclassifiedRegularity: "Regular" | "Variable" | "Irregular" | null =
+    null;
+  let reclassificationReason: string | null = null;
+  let computedRegularity: "Regular" | "Variable" | "Irregular" | null = null;
+
+  if (gaps.length >= 3) {
+    if (sd <= 2) computedRegularity = "Regular";
+    else if (sd <= 4) computedRegularity = "Variable";
+    else computedRegularity = "Irregular";
+
+    if (computedRegularity !== cycleRegularity) {
+      reclassifiedRegularity = computedRegularity;
+      if (computedRegularity === "Regular") {
+        reclassificationReason =
+          "Your last 3+ cycles show consistent timing. We've updated your cycle type to Regular.";
+      } else if (computedRegularity === "Irregular") {
+        reclassificationReason =
+          "Your recent cycles have varied by more than 4 days on average. We've updated your cycle type to Irregular.";
+      } else {
+        reclassificationReason =
+          "Your recent cycles have shown moderate variation. We've updated your cycle type to Variable.";
+      }
+    }
+  }
 
   // Symptom adjustment (pull earlier if spotting/cramps consistently precede period)
   const symptomAdj = computeSymptomAdjustment(
@@ -477,14 +551,14 @@ export function computeCycleSnapshot(params: {
   const confidenceScore = computeConfidenceScore({
     gaps,
     lastPeriodStartKey: resolvedLastStartKey,
-    cycleRegularity,
+    cycleRegularity: computedRegularity ?? cycleRegularity,
   });
   const confidence = confidenceLevel(confidenceScore);
 
   // Prediction window
   const nextPeriodWindow = rawNextKey
-    ? buildPredictionWindow(rawNextKey, confidenceScore, gaps, trend)
-    : { earliest: null, latest: null, point: null };
+    ? buildPredictionWindow(rawNextKey, confidenceScore, gaps)
+    : { earliest: null, latest: null, point: null, displayLabel: null };
 
   // Ovulation + fertile window (off point estimate, or midpoint of window)
   const ovulationBase = nextPeriodWindow.point ?? rawNextKey;
@@ -508,14 +582,15 @@ export function computeCycleSnapshot(params: {
       : computeCyclePhase(cycleDay, effectiveCycleLength, periodLengthDays);
 
   // Insight
-  const insight = buildInsight({
+  const computedInsight = buildInsight({
     gaps,
     confidenceScore,
     trend,
-    sd: stdDev(gaps),
+    sd,
     symptomAdjustment: symptomAdj,
-    cycleRegularity,
+    cycleRegularity: computedRegularity ?? cycleRegularity,
   });
+  const insight = reclassificationReason ?? computedInsight;
 
   return {
     phase,
@@ -531,5 +606,7 @@ export function computeCycleSnapshot(params: {
     confidenceScore,
     insight,
     trendDirection: trend,
+    reclassifiedRegularity,
+    reclassificationReason,
   };
 }

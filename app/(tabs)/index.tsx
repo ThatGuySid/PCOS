@@ -47,16 +47,14 @@ function formatRelativeDays(days: number): string {
   return `${Math.abs(days)}d ago`;
 }
 
-function getNextPeriodStat(
-  window: {
-    point: string | null;
-    earliest: string | null;
-    latest: string | null;
-  },
-  predictedKey: string | null,
-): string {
-  if (predictedKey) {
-    const days = getDaysUntil(predictedKey);
+function getNextPeriodStat(window: {
+  point: string | null;
+  earliest: string | null;
+  latest: string | null;
+  displayLabel?: string | null;
+}): string {
+  if (window.point) {
+    const days = getDaysUntil(window.point);
     return days === null ? "—" : formatRelativeDays(days);
   }
 
@@ -81,7 +79,13 @@ function getNextPeriodStat(
 }
 
 export default function HomeScreen() {
-  const { user, livePhase, liveCycleDay, cycleSnapshot } = useUser();
+  const {
+    user,
+    livePhase,
+    liveCycleDay,
+    cycleSnapshot,
+    reclassificationNotice,
+  } = useUser();
   const phase = PHASE_COLORS[livePhase] ?? PHASE_COLORS.Menstrual;
   const hasCycleData =
     cycleSnapshot.phase !== null &&
@@ -117,6 +121,25 @@ export default function HomeScreen() {
           >
             <GreetingHeader name={user.name} />
           </View>
+
+          {reclassificationNotice && (
+            <View
+              style={{
+                marginHorizontal: 20,
+                marginBottom: 10,
+                backgroundColor: "#FFF4E6",
+                borderRadius: 14,
+                paddingVertical: 10,
+                paddingHorizontal: 14,
+                borderLeftWidth: 3,
+                borderLeftColor: "#E07A2D",
+              }}
+            >
+              <Text style={{ color: "#7A3E14", fontSize: 12 }}>
+                {reclassificationNotice}
+              </Text>
+            </View>
+          )}
 
           {/* ── Cycle card ── no negative margin so greeting is never cut off */}
           <View
@@ -244,10 +267,7 @@ export default function HomeScreen() {
               {
                 label: "Next Period",
                 value: cycleSnapshot.nextPeriodWindow
-                  ? getNextPeriodStat(
-                      cycleSnapshot.nextPeriodWindow,
-                      cycleSnapshot.predictedNextPeriodDateKey ?? null,
-                    )
+                  ? getNextPeriodStat(cycleSnapshot.nextPeriodWindow)
                   : "—",
                 emoji: "📅",
               },

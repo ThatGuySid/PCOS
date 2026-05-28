@@ -15,6 +15,10 @@ import {
     type Medicine,
     type MedicineRecurrence,
 } from "@/services/medicineService";
+import {
+    cancelMedicineNotification,
+    scheduleMedicineNotifications,
+} from "@/services/notificationService";
 import DateTimePicker, {
     type DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
@@ -126,7 +130,7 @@ function normalizeTimeLabel(value: string) {
 
 export default function MedicineTrackerScreen() {
   const router = useRouter();
-  const { firebaseUser } = useUser();
+  const { firebaseUser, user } = useUser();
   const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -368,6 +372,10 @@ export default function MedicineTrackerScreen() {
     const saved = await persistMedicines(nextMedicines);
     if (!saved) return;
 
+    if (user.notificationsEnabled) {
+      await scheduleMedicineNotifications([nextMedicine]);
+    }
+
     resetForm();
   }
 
@@ -389,10 +397,15 @@ export default function MedicineTrackerScreen() {
   }
 
   async function handleDosePress(medicine: Medicine, doseKey: string) {
+    const wasTaken = medicine.completedDoseKeys.includes(doseKey);
     const nextMedicines = medicines.map((item) =>
       item.id === medicine.id ? toggleDoseTaken(item, doseKey) : item,
     );
     await persistMedicines(nextMedicines);
+
+    if (!wasTaken) {
+      await cancelMedicineNotification(medicine.id);
+    }
   }
 
   return (

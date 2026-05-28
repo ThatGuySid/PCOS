@@ -27,8 +27,9 @@ export type FirestoreUserProfile = {
   totalCycleDays: number;
   cyclePhase: CyclePhase;
   periodLengthDays: number | null;
-  cycleRegularity: "Regular" | "Irregular" | null;
+  cycleRegularity: "Regular" | "Variable" | "Irregular" | null;
   flowIntensity: "Light" | "Medium" | "Heavy" | null;
+  notificationsEnabled: boolean;
   periodStartDateKey: string | null;
   periodEndDateKey: string | null;
   ovulationDateKey: string | null;

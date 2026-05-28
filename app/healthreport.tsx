@@ -1,6 +1,7 @@
 import TrackerListItem from "@/components/health/TrackerListItem";
 import TrackerPill from "@/components/health/TrackerPill";
 import TrackerSection from "@/components/health/TrackerSection";
+import { useUser } from "@/context/UserContext";
 import { storage } from "@/services/storage";
 import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system";
@@ -40,9 +41,6 @@ const REPORT_FILTERS: ("All" | ReportCategory)[] = [
   "Scans",
   "Prescriptions",
 ];
-
-const VAULT_STORAGE_KEY = "pcos.health.vault.reports.v1";
-const VAULT_FILES_DIR = "health-vault-reports";
 
 function toSafeString(value: unknown, fallback: string) {
   if (typeof value === "string" && value.trim().length > 0) return value;
@@ -124,11 +122,14 @@ function sanitizeFileName(fileName: string) {
   return fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
 }
 
-async function persistReportFileLocally(file: {
-  uri: string;
-  name: string;
-  mimeType?: string | null;
-}) {
+async function persistReportFileLocally(
+  file: {
+    uri: string;
+    name: string;
+    mimeType?: string | null;
+  },
+  vaultFilesDir: string,
+) {
   if (!FileSystem.documentDirectory) {
     console.warn(
       "[healthreport] documentDirectory unavailable, keeping source URI",
@@ -141,7 +142,7 @@ async function persistReportFileLocally(file: {
   }
 
   const safeName = sanitizeFileName(file.name || `report-${Date.now()}`);
-  const directory = `${FileSystem.documentDirectory}${VAULT_FILES_DIR}`;
+  const directory = `${FileSystem.documentDirectory}${vaultFilesDir}`;
   const destination = `${directory}/${Date.now()}-${safeName}`;
 
   await FileSystem.makeDirectoryAsync(directory, { intermediates: true }).catch(
@@ -160,6 +161,7 @@ async function persistReportFileLocally(file: {
 
 export default function HealthReportVaultScreen() {
   const router = useRouter();
+  const { firebaseUser } = useUser();
   const [activeFilter, setActiveFilter] = useState<"All" | ReportCategory>(
     "All",
   );
@@ -169,10 +171,18 @@ export default function HealthReportVaultScreen() {
   );
   const [isHydrated, setIsHydrated] = useState(false);
 
+  const vaultStorageKey = `@herflow/vault-reports/${firebaseUser?.uid}`;
+  const vaultFilesDir = `health-vault-reports/${firebaseUser?.uid}`;
+
   useEffect(() => {
     const loadReports = async () => {
+      if (!firebaseUser?.uid) {
+        setReports([]);
+        setIsHydrated(true);
+        return;
+      }
       try {
-        const savedReports = await storage.getItem(VAULT_STORAGE_KEY);
+        const savedReports = await storage.getItem(vaultStorageKey);
         if (!savedReports) {
           console.log("[healthreport] no saved reports found");
           setIsHydrated(true);
@@ -204,10 +214,10 @@ export default function HealthReportVaultScreen() {
     };
 
     void loadReports();
-  }, []);
+  }, [firebaseUser?.uid, vaultStorageKey]);
 
   useEffect(() => {
-    if (!isHydrated) return;
+    if (!isHydrated || !firebaseUser?.uid) return;
 
     const persistReports = async () => {
       try {
@@ -217,7 +227,7 @@ export default function HealthReportVaultScreen() {
           .filter((entry) => Boolean(entry.uri));
 
         await storage.setItem(
-          VAULT_STORAGE_KEY,
+          vaultStorageKey,
           JSON.stringify(normalizedReports),
         );
         console.log(
@@ -229,7 +239,7 @@ export default function HealthReportVaultScreen() {
     };
 
     void persistReports();
-  }, [isHydrated, reports]);
+  }, [firebaseUser?.uid, isHydrated, reports, vaultStorageKey]);
 
   const filteredReports = useMemo(() => {
     if (activeFilter === "All") return reports;
@@ -273,7 +283,7 @@ export default function HealthReportVaultScreen() {
       year: "numeric",
     });
 
-    const persistedFile = await persistReportFileLocally(file);
+    const persistedFile = await persistReportFileLocally(file, vaultFilesDir);
 
     const report: VaultReport = {
       id: `${today.getTime()}-${Math.random().toString(36).slice(2, 9)}`,
@@ -356,27 +366,6 @@ export default function HealthReportVaultScreen() {
       console.warn("[healthreport] upload gallery failed", error);
       Alert.alert("Upload failed", "Could not import image from gallery.");
     }
-  };
-
-  const handleDeleteReport = (reportId: string) => {
-    Alert.alert(
-      "Delete report",
-      "This report will be removed from the vault.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => {
-            setReports((currentReports) =>
-              currentReports.filter((report) => report.id !== reportId),
-            );
-            console.log("[healthreport] deleted report", reportId);
-            setSelectedReport(null);
-          },
-        },
-      ],
-    );
   };
 
   const handleExportReport = async () => {
@@ -705,30 +694,6 @@ export default function HealthReportVaultScreen() {
                     style={{ color: "#fff", fontSize: 13, fontWeight: "800" }}
                   >
                     Save + Share
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={() =>
-                    selectedReport && handleDeleteReport(selectedReport.id)
-                  }
-                  activeOpacity={0.85}
-                  style={{
-                    flex: 1,
-                    backgroundColor: "#FDE8EC",
-                    borderRadius: 12,
-                    paddingVertical: 11,
-                    alignItems: "center",
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: "#C0162C",
-                      fontSize: 13,
-                      fontWeight: "800",
-                    }}
-                  >
-                    Delete
                   </Text>
                 </TouchableOpacity>
 

@@ -11,7 +11,7 @@ export type AIContext = {
   cycleDay: number | null;
   totalCycleDays: number;
   periodLengthDays: number | null;
-  cycleRegularity: "Regular" | "Irregular" | null;
+  cycleRegularity: "Regular" | "Variable" | "Irregular" | null;
   flowIntensity: "Light" | "Medium" | "Heavy" | null;
   nextPeriodWindow: CycleSnapshot["nextPeriodWindow"] | null;
   recentSymptoms: string[];
@@ -585,6 +585,10 @@ function buildProfileSupportSentence(context: AIContext) {
   if (context.cycleRegularity === "Irregular") {
     parts.push(
       "your cycle is marked irregular, so I’m keeping the timing guidance approximate",
+    );
+  } else if (context.cycleRegularity === "Variable") {
+    parts.push(
+      "your cycle shows some variation, so I’m keeping the timing guidance flexible",
     );
   }
 

@@ -8,6 +8,11 @@ import {
     type CycleSnapshot,
 } from "@/services/cycleService";
 import { auth } from "@/services/firebaseConfig";
+import {
+    requestPermission,
+    scheduleAllCycleNotifications,
+    scheduleCuteNotifications,
+} from "@/services/notificationService";
 import { storage } from "@/services/storage";
 import { getRecentSymptoms } from "@/services/symptomService";
 import {
@@ -54,8 +59,9 @@ type UserData = {
   totalCycleDays: number;
   cyclePhase: CyclePhase;
   periodLengthDays: number | null;
-  cycleRegularity: "Regular" | "Irregular" | null;
+  cycleRegularity: "Regular" | "Variable" | "Irregular" | null;
   flowIntensity: "Light" | "Medium" | "Heavy" | null;
+  notificationsEnabled: boolean;
   periodStartDateKey: string | null;
   periodEndDateKey: string | null;
   ovulationDateKey: string | null;
@@ -80,6 +86,7 @@ type UserContextType = {
   isProfileHydrated: boolean;
   hasProfileData: boolean;
   hasStartedJourney: boolean;
+  reclassificationNotice: string | null;
   /** The signed-in Firebase user, or null when logged out. */
   firebaseUser: User | null;
   isAuthLoading: boolean;
@@ -98,6 +105,7 @@ const DEFAULT_USER: UserData = {
   periodLengthDays: null,
   cycleRegularity: null,
   flowIntensity: null,
+  notificationsEnabled: true,
   periodStartDateKey: null,
   periodEndDateKey: null,
   ovulationDateKey: null,
@@ -255,6 +263,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [isProfileHydrated, setIsProfileHydrated] = useState(false);
   const [hasProfileData, setHasProfileData] = useState(false);
   const [hasStartedJourney, setHasStartedJourney] = useState(false);
+  const [reclassificationNotice, setReclassificationNotice] = useState<
+    string | null
+  >(null);
 
   const hydratedUidRef = useRef<string | null>(null);
   const wasLoggedOutRef = useRef(false);
@@ -392,6 +403,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
       isMounted = false;
       unsub();
     };
+  }, []);
+
+  useEffect(() => {
+    requestPermission().catch((error) => {
+      console.warn(
+        "[UserContext] notification permission request failed",
+        error,
+      );
+    });
   }, []);
 
   useEffect(() => {
@@ -536,6 +556,52 @@ export function UserProvider({ children }: { children: ReactNode }) {
     ],
   );
 
+  useEffect(() => {
+    if (!cycleSnapshot.reclassifiedRegularity) return;
+    if (cycleSnapshot.reclassifiedRegularity === user.cycleRegularity) return;
+
+    if (cycleSnapshot.reclassificationReason) {
+      setReclassificationNotice(cycleSnapshot.reclassificationReason);
+    }
+    setUser({ cycleRegularity: cycleSnapshot.reclassifiedRegularity });
+  }, [
+    cycleSnapshot.reclassifiedRegularity,
+    cycleSnapshot.reclassificationReason,
+    user.cycleRegularity,
+  ]);
+
+  const didScheduleCuteRef = useRef(false);
+
+  useEffect(() => {
+    if (!isHydrated || didScheduleCuteRef.current) return;
+    if (!user.notificationsEnabled) return;
+
+    didScheduleCuteRef.current = true;
+    scheduleCuteNotifications().catch((error) => {
+      console.warn("[UserContext] cute notifications scheduling failed", error);
+    });
+  }, [isHydrated, user.notificationsEnabled]);
+
+  useEffect(() => {
+    if (!user.notificationsEnabled) return;
+
+    scheduleAllCycleNotifications(cycleSnapshot).catch((error) => {
+      console.warn("[UserContext] cycle notification scheduling failed", error);
+    });
+  }, [
+    cycleSnapshot.nextPeriodWindow,
+    cycleSnapshot.ovulationDateKey,
+    user.notificationsEnabled,
+  ]);
+
+  const cycleSnapshotWithNotice = useMemo(
+    () =>
+      reclassificationNotice
+        ? { ...cycleSnapshot, insight: reclassificationNotice }
+        : cycleSnapshot,
+    [cycleSnapshot, reclassificationNotice],
+  );
+
   const liveCycleDay = cycleSnapshot.cycleDay;
   const livePhase = cycleSnapshot.phase;
 
@@ -553,11 +619,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
         resetUser,
         livePhase,
         liveCycleDay,
-        cycleSnapshot,
+        cycleSnapshot: cycleSnapshotWithNotice,
         recentSymptoms,
         isProfileHydrated,
         hasProfileData,
         hasStartedJourney,
+        reclassificationNotice,
         firebaseUser,
         isAuthLoading,
       }}

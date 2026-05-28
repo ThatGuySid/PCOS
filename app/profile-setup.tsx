@@ -332,9 +332,9 @@ export default function ProfileSetupPage() {
   const [activeBMIField, setActiveBMIField] = useState<ActiveBMIField>(null);
   const [cycleLength, setCycleLength] = useState("");
   const [periodLength, setPeriodLength] = useState("");
-  const [regularity, setRegularity] = useState<"Regular" | "Irregular" | null>(
-    null,
-  );
+  const [regularity, setRegularity] = useState<
+    "Regular" | "Variable" | "Irregular" | null
+  >(null);
   const [flowIntensity, setFlowIntensity] = useState<
     "Light" | "Medium" | "Heavy" | null
   >(null);
@@ -679,7 +679,7 @@ export default function ProfileSetupPage() {
         >
           <SectionLabel>Cycle Regularity</SectionLabel>
           <View style={{ flexDirection: "row", gap: 12 }}>
-            {(["Regular", "Irregular"] as const).map((opt) => (
+            {(["Regular", "Variable", "Irregular"] as const).map((opt) => (
               <Chip
                 key={opt}
                 label={opt}

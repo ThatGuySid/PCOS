@@ -1,7 +1,14 @@
 import DangerZone from "@/components/settings/DangerZone";
 import { useUser } from "@/context/UserContext";
+import { getMedicineTracker } from "@/services/medicineService";
+import {
+    cancelAllNotifications,
+    requestPermission,
+    scheduleAllCycleNotifications,
+    scheduleCuteNotifications,
+    scheduleMedicineNotifications,
+} from "@/services/notificationService";
 import { useRouter } from "expo-router";
-import { useState } from "react";
 import {
     Alert,
     Platform,
@@ -19,15 +26,18 @@ function SettingRow({
   label,
   sub,
   hasToggle,
+  value,
+  onValueChange,
   onPress,
 }: {
   icon: string;
   label: string;
   sub?: string;
   hasToggle?: boolean;
+  value?: boolean;
+  onValueChange?: (next: boolean) => void;
   onPress?: () => void;
 }) {
-  const [enabled, setEnabled] = useState(false);
   return (
     <TouchableOpacity
       onPress={!hasToggle ? onPress : undefined}
@@ -65,8 +75,8 @@ function SettingRow({
       </View>
       {hasToggle ? (
         <Switch
-          value={enabled}
-          onValueChange={setEnabled}
+          value={value ?? false}
+          onValueChange={onValueChange}
           trackColor={{ false: "#F5E0E3", true: "#C0162C" }}
           thumbColor="#fff"
         />
@@ -120,7 +130,8 @@ const SECTIONS = [
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { resetUser, signOutUser } = useUser();
+  const { resetUser, signOutUser, user, setUser, cycleSnapshot, firebaseUser } =
+    useUser();
 
   // Full reset — deletes the account and returns to the login screen
   const handleResetAllData = async () => {
@@ -157,6 +168,33 @@ export default function SettingsScreen() {
           },
         },
       ]);
+    }
+  };
+
+  const handleNotificationsToggle = async (nextValue: boolean) => {
+    setUser({ notificationsEnabled: nextValue });
+
+    if (!nextValue) {
+      await cancelAllNotifications();
+      return;
+    }
+
+    const granted = await requestPermission();
+    if (!granted) {
+      Alert.alert(
+        "Notifications disabled",
+        "Enable notifications in your device settings to receive reminders.",
+      );
+      setUser({ notificationsEnabled: false });
+      return;
+    }
+
+    await scheduleAllCycleNotifications(cycleSnapshot);
+    await scheduleCuteNotifications();
+
+    if (firebaseUser) {
+      const tracker = await getMedicineTracker(firebaseUser.uid);
+      await scheduleMedicineNotifications(tracker.medicines);
     }
   };
 
@@ -222,6 +260,10 @@ export default function SettingsScreen() {
               <SettingRow
                 key={item.label}
                 {...item}
+                value={item.hasToggle ? user.notificationsEnabled : undefined}
+                onValueChange={
+                  item.hasToggle ? handleNotificationsToggle : undefined
+                }
                 onPress={
                   item.label === "Edit Profile"
                     ? () => router.push("/(tabs)/profile")
