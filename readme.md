@@ -211,6 +211,7 @@ npx expo start
 ```bash
 npm install -g eas-cli
 eas login
+npx expo prebuild --platform android
 eas build -p android --profile preview
 ```
 
