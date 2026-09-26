@@ -4,7 +4,7 @@ import {
     getLatestPeriodEntry,
     sortPeriodEntriesByStartDate,
     toDateKey,
-} from "@/services/dateService";
+} from "@/constants/cycleUtils";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

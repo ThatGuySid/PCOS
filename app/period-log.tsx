@@ -11,7 +11,7 @@ import {
     getLatestPeriodEntry,
     sortPeriodEntriesByStartDate,
     toDateKey,
-} from "@/services/dateService";
+} from "@/constants/cycleUtils";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {

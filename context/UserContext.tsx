@@ -24,6 +24,7 @@ import { User } from "firebase/auth";
 import {
     createContext,
     ReactNode,
+    useCallback,
     useContext,
     useEffect,
     useMemo,
@@ -364,7 +365,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
             );
           } else {
             // Firestore empty but user has AsyncStorage backup — use it
-            const stored = await storage.getItem(fbUser.uid);
+            const stored = await storage.getItem(keyFor(fbUser.uid));
             if (stored) {
               const restored = fromStoredUser(stored);
               if (restored) {
@@ -383,7 +384,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
             error,
           );
           // Offline/error: try AsyncStorage fallback
-          const stored = await storage.getItem(fbUser.uid);
+          const stored = await storage.getItem(keyFor(fbUser.uid));
           if (stored) {
             const restored = fromStoredUser(stored);
             if (restored) {
@@ -478,37 +479,44 @@ export function UserProvider({ children }: { children: ReactNode }) {
     };
   }, [isHydrated, firebaseUser, user]);
 
-  const setUser = (data: Partial<UserData>) => {
-    setUserState((prev) => ({ ...prev, ...data }));
-    if (typeof data.hasStartedJourney === "boolean") {
-      setHasProfileData(data.hasStartedJourney);
-      setHasStartedJourney(data.hasStartedJourney);
-    }
-    if (data.hasStartedJourney === true && firebaseUser) {
-      const merged = { ...user, ...data } as UserData;
-      const stored = toStoredUser(merged);
-      updateUserProfile(firebaseUser.uid, stored).catch((error) => {
-        console.warn("[UserContext] immediate firestore save failed", error);
-      });
-    }
-  };
+  const setUser = useCallback(
+    (data: Partial<UserData>) => {
+      setUserState((prev) => ({ ...prev, ...data }));
+      if (typeof data.hasStartedJourney === "boolean") {
+        setHasProfileData(data.hasStartedJourney);
+        setHasStartedJourney(data.hasStartedJourney);
+      }
+      if (data.hasStartedJourney === true && firebaseUser) {
+        const merged = { ...user, ...data } as UserData;
+        const stored = toStoredUser(merged);
+        updateUserProfile(firebaseUser.uid, stored).catch((error) => {
+          console.warn("[UserContext] immediate firestore save failed", error);
+        });
+      }
+    },
+    [user, firebaseUser],
+  );
 
-  const signOutUser = async (): Promise<{
+  const signOutUser = useCallback(async (): Promise<{
     success: boolean;
     error?: string;
   }> => {
+    const signedOutUid = hydratedUidRef.current ?? firebaseUser?.uid ?? null;
     const result = await logOut();
     if (result.success) {
       hydratedUidRef.current = null;
       setUserState(DEFAULT_USER);
       setHasProfileData(false);
       setHasStartedJourney(false);
-      await storage.removeItem(USER_STORAGE_KEY).catch(() => {});
+      await storage.removeItem(keyFor(signedOutUid)).catch(() => {});
     }
     return result;
-  };
+  }, []);
 
-  const resetUser = async (): Promise<{ success: boolean; error?: string }> => {
+  const resetUser = useCallback(async (): Promise<{
+    success: boolean;
+    error?: string;
+  }> => {
     if (!firebaseUser) {
       return { success: false, error: "No signed-in account found." };
     }
@@ -538,10 +546,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setUserState(DEFAULT_USER);
     setHasProfileData(false);
     setHasStartedJourney(false);
-    await storage.removeItem(USER_STORAGE_KEY).catch(() => {});
+    await storage
+      .removeItem(keyFor(hydratedUidRef.current ?? uid ?? null))
+      .catch(() => {});
 
     return { success: true };
-  };
+  }, [firebaseUser]);
 
   const cycleSnapshot = useMemo(
     () =>
@@ -615,27 +625,43 @@ export function UserProvider({ children }: { children: ReactNode }) {
     [user.symptomLogs],
   );
 
+  const contextValue = useMemo(
+    () => ({
+      user,
+      setUser,
+      signOutUser,
+      resetUser,
+      livePhase,
+      liveCycleDay,
+      cycleSnapshot: cycleSnapshotWithNotice,
+      recentSymptoms,
+      isProfileHydrated,
+      hasProfileData,
+      hasStartedJourney,
+      reclassificationNotice,
+      firebaseUser,
+      isAuthLoading,
+    }),
+    [
+      user,
+      setUser,
+      signOutUser,
+      resetUser,
+      livePhase,
+      liveCycleDay,
+      cycleSnapshotWithNotice,
+      recentSymptoms,
+      isProfileHydrated,
+      hasProfileData,
+      hasStartedJourney,
+      reclassificationNotice,
+      firebaseUser,
+      isAuthLoading,
+    ],
+  );
+
   return (
-    <UserContext.Provider
-      value={{
-        user,
-        setUser,
-        signOutUser,
-        resetUser,
-        livePhase,
-        liveCycleDay,
-        cycleSnapshot: cycleSnapshotWithNotice,
-        recentSymptoms,
-        isProfileHydrated,
-        hasProfileData,
-        hasStartedJourney,
-        reclassificationNotice,
-        firebaseUser,
-        isAuthLoading,
-      }}
-    >
-      {children}
-    </UserContext.Provider>
+    <UserContext.Provider value={contextValue}>{children}</UserContext.Provider>
   );
 }
 

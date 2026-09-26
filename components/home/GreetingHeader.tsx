@@ -1,3 +1,4 @@
+import { PixelHeart } from "@/components/shared/PixelHeart";
 import { useEffect, useRef, useState } from "react";
 import { Animated, AppState, Text, View } from "react-native";
 
@@ -15,35 +16,6 @@ const SUBTITLES = [
   "Every phase is beautiful. You've got this. ✨",
   "Take a breath. You're right where you need to be.",
 ];
-
-function PixelHeart() {
-  const grid = [
-    [0, 1, 1, 0, 1, 1, 0],
-    [1, 1, 1, 1, 1, 1, 1],
-    [1, 1, 1, 1, 1, 1, 1],
-    [0, 1, 1, 1, 1, 1, 0],
-    [0, 0, 1, 1, 1, 0, 0],
-    [0, 0, 0, 1, 0, 0, 0],
-  ];
-  return (
-    <View>
-      {grid.map((row, ri) => (
-        <View key={ri} style={{ flexDirection: "row" }}>
-          {row.map((cell, ci) => (
-            <View
-              key={ci}
-              style={{
-                width: 10,
-                height: 10,
-                backgroundColor: cell ? "#C0162C" : "transparent",
-              }}
-            />
-          ))}
-        </View>
-      ))}
-    </View>
-  );
-}
 
 function getGreeting(now: Date) {
   const hour = now.getHours();

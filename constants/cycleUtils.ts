@@ -65,3 +65,11 @@ export function getLatestPeriodEntry<
   const sorted = sortPeriodEntriesByStartDate(entries);
   return sorted[sorted.length - 1] ?? null;
 }
+
+export function getDateKeyDifferenceInDays(startKey: string, endKey: string) {
+  const start = fromDateKey(startKey);
+  const end = fromDateKey(endKey);
+  if (!start || !end) return 0;
+
+  return Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+}

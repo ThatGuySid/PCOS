@@ -1,3 +1,4 @@
+import { PixelHeart } from "@/components/shared/PixelHeart";
 import { signUp } from "@/services/authService";
 import { createUserProfile } from "@/services/userProfileService";
 import { useRouter } from "expo-router";
@@ -15,35 +16,7 @@ import {
     View,
 } from "react-native";
 
-function PixelHeart() {
-  const grid = [
-    [0, 1, 1, 0, 1, 1, 0],
-    [1, 1, 1, 1, 1, 1, 1],
-    [1, 1, 1, 1, 1, 1, 1],
-    [0, 1, 1, 1, 1, 1, 0],
-    [0, 0, 1, 1, 1, 0, 0],
-    [0, 0, 0, 1, 0, 0, 0],
-  ];
 
-  return (
-    <View style={{ alignItems: "center", marginBottom: 8 }}>
-      {grid.map((row, ri) => (
-        <View key={ri} style={{ flexDirection: "row" }}>
-          {row.map((cell, ci) => (
-            <View
-              key={ci}
-              style={{
-                width: 9,
-                height: 9,
-                backgroundColor: cell ? "#C0162C" : "transparent",
-              }}
-            />
-          ))}
-        </View>
-      ))}
-    </View>
-  );
-}
 
 function InputField({
   label,
@@ -153,7 +126,10 @@ export default function Signup() {
       >
         {/* Logo */}
         <View style={styles.logoWrap}>
-          <PixelHeart />
+          <PixelHeart
+            pixelSize={9}
+            containerStyle={{ alignItems: "center", marginBottom: 8 }}
+          />
           <Text style={styles.title}>herFlow</Text>
           <Text style={styles.subtitle}>Your personal cycle companion</Text>
         </View>

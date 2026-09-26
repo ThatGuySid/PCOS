@@ -4,7 +4,7 @@ import type {
     SymptomLogEntry,
 } from "@/context/UserContext";
 import type { CycleSnapshot } from "@/services/cycleService";
-import { fromDateKey } from "@/services/dateService";
+import { fromDateKey } from "@/constants/cycleUtils";
 
 export type AIContext = {
   phase: CyclePhase | null;

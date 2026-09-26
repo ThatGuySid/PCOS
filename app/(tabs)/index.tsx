@@ -2,7 +2,7 @@ import ActionButtons from "@/components/home/ActionButtons";
 import GreetingHeader from "@/components/home/GreetingHeader";
 import NextPeriodCard from "@/components/home/NextPeriodCard";
 import { useUser } from "@/context/UserContext";
-import { fromDateKey } from "@/services/dateService";
+import { fromDateKey } from "@/constants/cycleUtils";
 import { ImageBackground, ScrollView, Text, View } from "react-native";
 
 const PHASE_COLORS: Record<string, { bg: string; accent: string }> = {

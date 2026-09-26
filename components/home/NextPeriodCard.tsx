@@ -1,5 +1,5 @@
 import type { CycleSnapshot } from "@/services/cycleService";
-import { fromDateKey } from "@/services/dateService";
+import { fromDateKey } from "@/constants/cycleUtils";
 import { Text, View } from "react-native";
 
 type Props = {
