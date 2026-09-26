@@ -75,10 +75,11 @@ export async function updateUserProfile(
   uid: string,
   partial: Partial<Omit<FirestoreUserProfile, "createdAt" | "updatedAt">>,
 ): Promise<void> {
-  await updateDoc(userDoc(uid), {
-    ...partial,
-    updatedAt: serverTimestamp(),
-  });
+  await setDoc(
+    userDoc(uid),
+    { ...partial, updatedAt: serverTimestamp() },
+    { merge: true },
+  );
 }
 
 export async function savePeriodData(

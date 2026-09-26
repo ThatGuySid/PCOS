@@ -119,6 +119,8 @@ const DEFAULT_USER: UserData = {
 };
 
 const USER_STORAGE_KEY = "@herflow/user";
+const keyFor = (uid: string | null) =>
+  uid ? `${USER_STORAGE_KEY}/${uid}` : USER_STORAGE_KEY;
 
 type StoredUserData = Omit<UserData, "selectedPeriodDate"> & {
   selectedPeriodDate: string | null;
@@ -354,7 +356,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
               ...normalizedProfile,
             };
             await storage.setItem(
-              USER_STORAGE_KEY,
+              keyFor(fbUser.uid),
               JSON.stringify(toStoredUser(merged as UserData)),
             );
             console.log(
@@ -362,7 +364,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
             );
           } else {
             // Firestore empty but user has AsyncStorage backup — use it
-            const stored = await storage.getItem(USER_STORAGE_KEY);
+            const stored = await storage.getItem(fbUser.uid);
             if (stored) {
               const restored = fromStoredUser(stored);
               if (restored) {
@@ -381,7 +383,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
             error,
           );
           // Offline/error: try AsyncStorage fallback
-          const stored = await storage.getItem(USER_STORAGE_KEY);
+          const stored = await storage.getItem(fbUser.uid);
           if (stored) {
             const restored = fromStoredUser(stored);
             if (restored) {
@@ -447,11 +449,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isHydrated) return;
     storage
-      .setItem(USER_STORAGE_KEY, JSON.stringify(toStoredUser(user)))
+      .setItem(
+        keyFor(firebaseUser?.uid ?? null),
+        JSON.stringify(toStoredUser(user)),
+      ) // was USER_STORAGE_KEY
       .catch((error) => {
         console.warn("[UserContext] failed to persist local user data", error);
       });
-  }, [isHydrated, user]);
+  }, [isHydrated, user, firebaseUser]); // add firebaseUser to deps
 
   const firestoreSyncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
