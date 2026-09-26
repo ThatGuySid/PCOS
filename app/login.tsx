@@ -89,7 +89,7 @@ export default function LoginScreen() {
       return;
     }
 
-    console.log("[login] submit start", {
+    __DEV__ && console.log("[login] submit start", {
       email: email.trim().toLowerCase(),
       passLength: pass.length,
     });
@@ -112,10 +112,10 @@ export default function LoginScreen() {
     setLoading(false);
 
     if (result.success) {
-      console.log("[login] submit success, redirect -> /(tabs)");
+      __DEV__ && console.log("[login] submit success, redirect -> /(tabs)");
       router.replace("/(tabs)");
     } else {
-      console.warn("[login] submit failed", result.error);
+      __DEV__ && console.warn("[login] submit failed", result.error);
       Alert.alert("Login failed", result.error);
     }
   };
@@ -170,19 +170,19 @@ export default function LoginScreen() {
                 return;
               }
               setLoading(true);
-              console.log("[login] reset password start", {
+              __DEV__ && console.log("[login] reset password start", {
                 email: email.trim().toLowerCase(),
               });
               const result = await resetPassword(email.trim());
               setLoading(false);
               if (result.success) {
-                console.log("[login] reset password success");
+                __DEV__ && console.log("[login] reset password success");
                 Alert.alert(
                   "Email sent",
                   "Check your inbox for a password reset link.",
                 );
               } else {
-                console.warn("[login] reset password failed", result.error);
+                __DEV__ && console.warn("[login] reset password failed", result.error);
                 Alert.alert("Error", result.error);
               }
             }}

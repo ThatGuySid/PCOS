@@ -16,6 +16,7 @@ export default function ExportDataScreen() {
   const handleExport = async () => {
     if (isExporting) return;
     setIsExporting(true);
+    let fileUri: string | undefined;
     try {
       const medicineTracker = firebaseUser
         ? await getMedicineTracker(firebaseUser.uid)
@@ -42,7 +43,7 @@ export default function ExportDataScreen() {
       }
 
       const safeTimestamp = new Date().toISOString().replace(/[:.]/g, "-");
-      const fileUri = `${FileSystem.cacheDirectory}herflow-export-${safeTimestamp}.json`;
+      fileUri = `${FileSystem.cacheDirectory}herflow-export-${safeTimestamp}.json`;
 
       await FileSystem.writeAsStringAsync(fileUri, json, {
         encoding: FileSystem.EncodingType.UTF8,
@@ -55,12 +56,18 @@ export default function ExportDataScreen() {
           dialogTitle: strings.exportShareDialogTitle,
         });
       } else {
-        console.log("Export ready at:", fileUri);
+        __DEV__ && console.log("Export ready at:", fileUri);
         Alert.alert("Export ready", strings.exportNoShareNotice);
       }
     } catch (err) {
       Alert.alert("Export failed", strings.exportErrorNotice);
     } finally {
+      // ponytail: health data export shouldn't linger unencrypted in cache after the
+      // share sheet closes. FileSystem.deleteAsync(idempotent) is the built-in cleanup,
+      // no new dep needed.
+      if (fileUri) {
+        await FileSystem.deleteAsync(fileUri, { idempotent: true }).catch(() => {});
+      }
       setIsExporting(false);
     }
   };

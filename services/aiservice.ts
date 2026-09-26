@@ -5,6 +5,8 @@ import type {
 } from "@/context/UserContext";
 import type { CycleSnapshot } from "@/services/cycleService";
 import { fromDateKey } from "@/constants/cycleUtils";
+import app from "@/services/firebaseConfig";
+import { getFunctions, httpsCallable } from "firebase/functions";
 
 export type AIContext = {
   phase: CyclePhase | null;
@@ -788,12 +790,6 @@ export function getAssistantGuidance(
   };
 }
 
-function getGeminiApiKey() {
-  return typeof process !== "undefined"
-    ? (process.env.EXPO_PUBLIC_GEMINI_API_KEY?.trim() ?? "")
-    : "";
-}
-
 function getGeminiModel() {
   return typeof process !== "undefined"
     ? process.env.EXPO_PUBLIC_GEMINI_MODEL?.trim() || "gemini-1.5-flash"
@@ -855,42 +851,7 @@ function buildAssistantPrompt(context: AIContext, userMessage: string) {
   ].join("\n");
 }
 
-function extractGeminiText(payload: unknown) {
-  const response = payload as {
-    candidates?: Array<{
-      content?: { parts?: Array<{ text?: string }> };
-    }>;
-  };
-
-  return (
-    response.candidates
-      ?.flatMap((candidate) => candidate.content?.parts ?? [])
-      .map((part) => part.text ?? "")
-      .join(" ")
-      .trim() || null
-  );
-}
-
-async function generateGeminiAssistantResponse(
-  context: AIContext,
-  userMessage: string,
-) {
-  const apiKey = getGeminiApiKey();
-  if (!apiKey) return null;
-
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${getGeminiModel()}:generateContent?key=${encodeURIComponent(apiKey)}`;
-  const prompt = buildAssistantPrompt(context, userMessage);
-
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      systemInstruction: {
-        parts: [
-          {
-            text: `You are a warm, nurturing, and deeply compassionate health companion for someone navigating PCOS and period health.
+const ASSISTANT_SYSTEM_INSTRUCTION = `You are a warm, nurturing, and deeply compassionate health companion for someone navigating PCOS and period health.
 
 Your tone is always:
 - Soft and gentle, never clinical or robotic
@@ -909,31 +870,25 @@ When responding:
 7. Use gentle, inclusive language ("your body," "we can work with this," etc.)
 8. If you mention food or movement, keep it light and suggest 1-2 ideas max
 9. Never make medical claims — stay supportive and practical
-10. Embody calm presence. You're here to support, not to solve everything.`,
-          },
-        ],
-      },
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: prompt }],
-        },
-      ],
-      generationConfig: {
-        temperature: 0.6,
-        topP: 0.85,
-        topK: 40,
-        maxOutputTokens: 200,
-      },
-    }),
+10. Embody calm presence. You're here to support, not to solve everything.`;
+
+// ponytail: the Gemini API key used to live in the client bundle (EXPO_PUBLIC_GEMINI_API_KEY),
+// which anyone could pull out of the built app. It now stays server-side in the
+// getAiAssistantResponse Cloud Function (functions/index.js); this just calls that.
+async function generateGeminiAssistantResponse(
+  context: AIContext,
+  userMessage: string,
+) {
+  const prompt = buildAssistantPrompt(context, userMessage);
+  const callAssistant = httpsCallable(getFunctions(app), "getAiAssistantResponse");
+
+  const result = await callAssistant({
+    prompt,
+    systemInstruction: ASSISTANT_SYSTEM_INSTRUCTION,
+    model: getGeminiModel(),
   });
 
-  if (!response.ok) {
-    throw new Error(`Gemini request failed with ${response.status}`);
-  }
-
-  const data = (await response.json()) as unknown;
-  return extractGeminiText(data);
+  return (result.data as { text?: string | null })?.text ?? null;
 }
 
 export async function generateAssistantResponse(

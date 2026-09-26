@@ -13,12 +13,14 @@ import {
 } from "firebase/auth";
 import { auth } from "./firebaseConfig";
 
+// ponytail: __DEV__ is Expo/RN's built-in flag, already true/false at runtime —
+// no logger lib needed to keep emails/tokens out of production device logs.
 function authDebug(...args: unknown[]) {
-  console.log("[authService]", ...args);
+  if (__DEV__) console.log("[authService]", ...args);
 }
 
 function authWarn(...args: unknown[]) {
-  console.warn("[authService]", ...args);
+  if (__DEV__) console.warn("[authService]", ...args);
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
