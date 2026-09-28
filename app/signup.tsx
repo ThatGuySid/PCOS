@@ -106,6 +106,8 @@ export default function Signup() {
         symptomLogs: [],
         profileComplete: false,
         hasStartedJourney: false,
+        consentGiven: false,
+        consentTimestamp: null,
       });
     } catch {
       // Non-fatal: the profile will be created lazily on next sign-in.
@@ -177,6 +179,22 @@ export default function Signup() {
             </TouchableOpacity>
           }
         />
+
+        {/* Privacy notice — must be visible before account creation */}
+        <Text style={styles.legalText}>
+          By creating an account, you agree to our{" "}
+          <Text
+            style={styles.legalLink}
+            onPress={() => router.push("/privacy-policy")}
+          >
+            Privacy Policy
+          </Text>
+          {" "}and{" "}
+          <Text style={styles.legalLink} onPress={() => router.push("/terms")}>
+            Terms & Conditions
+          </Text>
+          .
+        </Text>
 
         {/* Sign up button */}
         <TouchableOpacity
@@ -279,6 +297,17 @@ const styles = StyleSheet.create({
   footerLink: {
     color: "#C0162C",
     fontSize: 13,
+    fontWeight: "700",
+  },
+  legalText: {
+    color: "#9A6070",
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 18,
+    textAlign: "center",
+  },
+  legalLink: {
+    color: "#C0162C",
     fontWeight: "700",
   },
 });

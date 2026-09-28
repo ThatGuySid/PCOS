@@ -99,6 +99,7 @@ function SettingRow({
 type SettingAction =
   | "edit-profile"
   | "privacy"
+  | "terms"
   | "export-data"
   | "language"
   | "about";
@@ -152,6 +153,11 @@ const buildSections = (
         action: "privacy",
       },
       {
+        icon: "📄",
+        label: "Terms & Conditions",
+        action: "terms",
+      },
+      {
         icon: "📤",
         label: strings.settingsItemExportTitle,
         action: "export-data",
@@ -194,6 +200,8 @@ export default function SettingsScreen() {
       router.push("/(tabs)/profile");
     } else if (action === "privacy") {
       router.push("/privacy");
+    } else if (action === "terms") {
+      router.push("/terms");
     } else if (action === "export-data") {
       router.push("/export-data");
     } else if (action === "language") {
@@ -227,7 +235,17 @@ export default function SettingsScreen() {
       Alert.alert("Reset failed", result.error ?? "Please try again.");
       return;
     }
-    router.replace("/login");
+
+    const confirmationMessage =
+      "Your account and all associated data have been permanently deleted.";
+    if (Platform.OS === "web") {
+      alert(confirmationMessage);
+      router.replace("/login");
+    } else {
+      Alert.alert("Account Deleted", confirmationMessage, [
+        { text: "OK", onPress: () => router.replace("/login") },
+      ]);
+    }
   };
 
   const performSignOut = async () => {

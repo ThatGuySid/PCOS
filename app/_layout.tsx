@@ -4,8 +4,13 @@ import { useEffect } from "react";
 import "../global.css";
 
 function AuthGuard() {
-  const { firebaseUser, isAuthLoading, isProfileHydrated, hasStartedJourney } =
-    useUser();
+  const {
+    firebaseUser,
+    isAuthLoading,
+    isProfileHydrated,
+    hasStartedJourney,
+    hasConsented,
+  } = useUser();
   const segments = useSegments();
   const router = useRouter();
 
@@ -18,6 +23,12 @@ function AuthGuard() {
       segments[0] === "signup" ||
       segments[0] === undefined;
     const isProfileSetupRoute = segments[0] === "profile-setup";
+    const isConsentRoute = segments[0] === "consent";
+    // Legal pages must be viewable before an account exists and during consent.
+    const isLegalRoute =
+      segments[0] === "privacy-policy" || segments[0] === "terms";
+    const isPubliclyViewableRoute =
+      isOnboardingRoute || inAuthGroup || isLegalRoute;
 
     console.log("[AuthGuard] evaluate", {
       segments,
@@ -25,9 +36,11 @@ function AuthGuard() {
       isAuthLoading,
       isProfileHydrated,
       hasStartedJourney,
+      hasConsented,
       isOnboardingRoute,
       inAuthGroup,
       isProfileSetupRoute,
+      isConsentRoute,
     });
 
     if (firebaseUser) {
@@ -36,17 +49,28 @@ function AuthGuard() {
         return;
       }
 
-      // If signed in but journey has not started yet, force setup.
-      if (!hasStartedJourney && !isProfileSetupRoute) {
-        console.log("[AuthGuard] redirect -> /profile-setup");
-        router.replace("/profile-setup");
-        return;
+      if (!hasStartedJourney) {
+        // Let users read the legal pages without being bounced back.
+        if (isLegalRoute) return;
+
+        // New / not-yet-onboarded accounts must consent before profile setup.
+        if (!hasConsented && !isConsentRoute) {
+          console.log("[AuthGuard] redirect -> /consent");
+          router.replace("/consent");
+          return;
+        }
+
+        if (hasConsented && !isProfileSetupRoute) {
+          console.log("[AuthGuard] redirect -> /profile-setup");
+          router.replace("/profile-setup");
+          return;
+        }
       }
 
-      // If journey has started and user is on auth/onboarding/setup, send to app.
+      // If journey has started and user is on auth/onboarding/setup/consent, send to app.
       if (
         hasStartedJourney &&
-        (inAuthGroup || isOnboardingRoute || isProfileSetupRoute)
+        (inAuthGroup || isOnboardingRoute || isProfileSetupRoute || isConsentRoute)
       ) {
         console.log("[AuthGuard] redirect -> /(tabs)");
         router.replace("/(tabs)");
@@ -63,7 +87,7 @@ function AuthGuard() {
       return;
     }
 
-    if (!firebaseUser && !isOnboardingRoute && !inAuthGroup) {
+    if (!firebaseUser && !isPubliclyViewableRoute) {
       console.log("[AuthGuard] redirect -> /onboarding");
       router.replace("/onboarding");
     }
@@ -72,6 +96,7 @@ function AuthGuard() {
     isAuthLoading,
     isProfileHydrated,
     hasStartedJourney,
+    hasConsented,
     segments,
   ]);
 

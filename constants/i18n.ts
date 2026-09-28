@@ -60,6 +60,10 @@ export type AppStrings = {
   privacyPolicyDataBody: string[];
   privacyPolicyUseTitle: string;
   privacyPolicyUseBody: string[];
+  privacyPolicyAiTitle: string;
+  privacyPolicyAiBody: string;
+  privacyPolicyRetentionTitle: string;
+  privacyPolicyRetentionBody: string;
   privacyPolicyShareTitle: string;
   privacyPolicyShareBody: string;
   privacyPolicySecurityTitle: string;
@@ -155,32 +159,45 @@ const EN_STRINGS: AppStrings = {
   privacyPolicyUpdatedLabel: "Last updated",
   privacyPolicyOverviewTitle: "Overview",
   privacyPolicyOverviewBody:
-    "HerFlow is designed to help you track your cycle and related health information. This policy explains what data we collect and how it is used.",
+    "HerFlow helps you track your cycle and PCOS-related health information. This policy explains what data we collect, how it's used, and your rights under India's Digital Personal Data Protection (DPDP) Act, and under GDPR or U.S. state privacy laws if you're using HerFlow from those regions.",
   privacyPolicyDataTitle: "Data We Collect",
   privacyPolicyDataBody: [
-    "- Profile details you provide",
-    "- Period, symptom, and mood logs",
+    "- Your email address (for account sign-in via Firebase Authentication)",
+    "- Name, age group, and avatar selection",
+    "- Height and weight (used only to show your BMI)",
+    "- Period, cycle, and ovulation dates you log",
+    "- Symptom and mood logs",
     "- Medication reminders and tracker entries",
+    "- Messages you send to the in-app AI Assistant",
   ],
   privacyPolicyUseTitle: "How We Use Data",
   privacyPolicyUseBody: [
-    "- Provide cycle predictions and reminders",
-    "- Personalize in-app guidance",
+    "- Provide cycle and ovulation predictions and reminders",
+    "- Personalize phase-based food, workout, and AI Assistant guidance",
     "- Improve app performance and reliability",
   ],
+  privacyPolicyAiTitle: "AI Assistant",
+  privacyPolicyAiBody:
+    "Messages you send to the AI Assistant, along with relevant cycle and symptom context, are shared with Google to generate a reply. We do not keep a copy of your chat messages after the reply is generated.",
+  privacyPolicyRetentionTitle: "How Long We Keep Your Data",
+  privacyPolicyRetentionBody:
+    "We keep your profile, cycle, and symptom data for as long as your account exists. If you delete your account (Settings > Danger Zone), your profile data, your data stored on your device, and your login credentials are permanently deleted immediately. This cannot be undone.",
   privacyPolicyShareTitle: "Sharing",
   privacyPolicyShareBody:
-    "We do not sell your data. We only share data when required by law or to provide a service you explicitly request.",
+    "We do not sell your personal or health data. Messages you send to the AI Assistant are shared with Google, and Google may retain that data under its own privacy policy, which is outside our control and is not removed when you delete your HerFlow account. We may also share data when required by law.",
   privacyPolicySecurityTitle: "Security",
   privacyPolicySecurityBody:
     "We use standard security practices to protect your information, but no system can guarantee absolute security.",
   privacyPolicyChoicesTitle: "Your Choices",
   privacyPolicyChoicesBody: [
     "- Export your data from Settings",
-    "- Delete your account and data at any time",
+    "- Delete your account and all associated data at any time from Settings > Danger Zone",
   ],
   privacyPolicyContactTitle: "Contact",
-  privacyPolicyContactBody: "Questions? Email support@herflow.app.",
+  // TODO: privacy@herflow.app is a placeholder — replace with a real, monitored
+  // inbox for data access/deletion requests before this ships.
+  privacyPolicyContactBody:
+    "For questions about your data, or to request a copy or deletion of it, email privacy@herflow.app.",
 };
 
 const ES_STRINGS: AppStrings = {

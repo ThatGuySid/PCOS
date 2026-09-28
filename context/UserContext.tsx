@@ -73,6 +73,9 @@ type UserData = {
   symptomLogs: SymptomLogEntry[];
   profileComplete: boolean;
   hasStartedJourney: boolean;
+  /** Explicit consent (health data + AI assistant disclosure) — see app/consent.tsx */
+  consentGiven: boolean;
+  consentTimestamp: string | null;
 };
 
 type UserContextType = {
@@ -87,6 +90,7 @@ type UserContextType = {
   isProfileHydrated: boolean;
   hasProfileData: boolean;
   hasStartedJourney: boolean;
+  hasConsented: boolean;
   reclassificationNotice: string | null;
   /** The signed-in Firebase user, or null when logged out. */
   firebaseUser: User | null;
@@ -117,6 +121,8 @@ const DEFAULT_USER: UserData = {
   symptomLogs: [],
   profileComplete: false,
   hasStartedJourney: false,
+  consentGiven: false,
+  consentTimestamp: null,
 };
 
 const USER_STORAGE_KEY = "@herflow/user";
@@ -266,6 +272,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [isProfileHydrated, setIsProfileHydrated] = useState(false);
   const [hasProfileData, setHasProfileData] = useState(false);
   const [hasStartedJourney, setHasStartedJourney] = useState(false);
+  const [hasConsented, setHasConsented] = useState(false);
   const [reclassificationNotice, setReclassificationNotice] = useState<
     string | null
   >(null);
@@ -316,6 +323,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         // is not shown repeatedly on restart.
         setHasProfileData((prev) => prev);
         setHasStartedJourney((prev) => prev);
+        setHasConsented((prev) => prev);
         wasLoggedOutRef.current = true;
         console.log(
           "[UserContext] no firebase user, retaining local journey flag",
@@ -344,6 +352,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
             setHasProfileData(profileHasData);
             setHasStartedJourney(profileHasData);
+            setHasConsented(Boolean(normalizedProfile.consentGiven));
             console.log(
               "[UserContext] profile hydrated from Firestore",
               profileHasData,
@@ -372,6 +381,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 setUserState(restored);
                 setHasProfileData(restored.hasStartedJourney ?? false);
                 setHasStartedJourney(restored.hasStartedJourney ?? false);
+                setHasConsented(restored.consentGiven ?? false);
                 console.log(
                   "[UserContext] profile fallback hydrated from AsyncStorage",
                 );
@@ -391,6 +401,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
               setUserState(restored);
               setHasProfileData(restored.hasStartedJourney ?? false);
               setHasStartedJourney(restored.hasStartedJourney ?? false);
+              setHasConsented(restored.consentGiven ?? false);
               console.log(
                 "[UserContext] profile recovery hydrated from AsyncStorage",
               );
@@ -432,6 +443,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
           setUserState(restored);
           setHasProfileData(restored.hasStartedJourney ?? false);
           setHasStartedJourney(restored.hasStartedJourney ?? false);
+          setHasConsented(restored.consentGiven ?? false);
           console.log("[UserContext] boot hydration loaded local user state");
         }
       } catch (error) {
@@ -486,7 +498,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
         setHasProfileData(data.hasStartedJourney);
         setHasStartedJourney(data.hasStartedJourney);
       }
-      if (data.hasStartedJourney === true && firebaseUser) {
+      if (typeof data.consentGiven === "boolean") {
+        setHasConsented(data.consentGiven);
+      }
+      if ((data.hasStartedJourney === true || data.consentGiven === true) && firebaseUser) {
         const merged = { ...user, ...data } as UserData;
         const stored = toStoredUser(merged);
         updateUserProfile(firebaseUser.uid, stored).catch((error) => {
@@ -508,6 +523,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setUserState(DEFAULT_USER);
       setHasProfileData(false);
       setHasStartedJourney(false);
+      setHasConsented(false);
       await storage.removeItem(keyFor(signedOutUid)).catch(() => {});
     }
     return result;
@@ -546,6 +562,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setUserState(DEFAULT_USER);
     setHasProfileData(false);
     setHasStartedJourney(false);
+    setHasConsented(false);
     await storage
       .removeItem(keyFor(hydratedUidRef.current ?? uid ?? null))
       .catch(() => {});
@@ -638,6 +655,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       isProfileHydrated,
       hasProfileData,
       hasStartedJourney,
+      hasConsented,
       reclassificationNotice,
       firebaseUser,
       isAuthLoading,
@@ -654,6 +672,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       isProfileHydrated,
       hasProfileData,
       hasStartedJourney,
+      hasConsented,
       reclassificationNotice,
       firebaseUser,
       isAuthLoading,

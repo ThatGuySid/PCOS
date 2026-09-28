@@ -47,7 +47,7 @@ export default function PrivacyPolicyScreen() {
               marginBottom: 6,
             }}
           >
-            {strings.privacyPolicyUpdatedLabel}: 2026-05-28
+            {strings.privacyPolicyUpdatedLabel}: 2026-09-26
           </Text>
           <Text style={{ color: "#8C5F66", fontSize: 13, lineHeight: 20 }}>
             {strings.privacyPolicyOverviewBody}
@@ -97,6 +97,52 @@ export default function PrivacyPolicyScreen() {
           </Text>
           <Text style={{ color: "#8C5F66", fontSize: 13, lineHeight: 20 }}>
             {strings.privacyPolicyUseBody.join("\n")}
+          </Text>
+        </View>
+
+        <View
+          style={{
+            backgroundColor: "#fff",
+            borderRadius: 20,
+            padding: 18,
+            marginBottom: 16,
+          }}
+        >
+          <Text
+            style={{
+              color: "#3A1A20",
+              fontSize: 14,
+              fontWeight: "800",
+              marginBottom: 6,
+            }}
+          >
+            {strings.privacyPolicyAiTitle}
+          </Text>
+          <Text style={{ color: "#8C5F66", fontSize: 13, lineHeight: 20 }}>
+            {strings.privacyPolicyAiBody}
+          </Text>
+        </View>
+
+        <View
+          style={{
+            backgroundColor: "#fff",
+            borderRadius: 20,
+            padding: 18,
+            marginBottom: 16,
+          }}
+        >
+          <Text
+            style={{
+              color: "#3A1A20",
+              fontSize: 14,
+              fontWeight: "800",
+              marginBottom: 6,
+            }}
+          >
+            {strings.privacyPolicyRetentionTitle}
+          </Text>
+          <Text style={{ color: "#8C5F66", fontSize: 13, lineHeight: 20 }}>
+            {strings.privacyPolicyRetentionBody}
           </Text>
         </View>
 

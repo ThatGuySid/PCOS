@@ -40,6 +40,9 @@ export type FirestoreUserProfile = {
   symptomLogs: SymptomLogEntry[];
   profileComplete: boolean;
   hasStartedJourney: boolean;
+  /** Explicit consent (health data + AI assistant disclosure) — see app/consent.tsx */
+  consentGiven: boolean;
+  consentTimestamp: string | null;
   updatedAt?: Timestamp;
   createdAt?: Timestamp;
 };
